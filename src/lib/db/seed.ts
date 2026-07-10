@@ -1,0 +1,1044 @@
+import { getDb, getSqlite } from "./index";
+import {
+  allocations,
+  agentEvents,
+  agentRuns,
+  buildRounds,
+  communityComments,
+  communityPosts,
+  demoState,
+  gemmaInsights,
+  holdings,
+  nfts,
+  projects,
+  proofArtifacts,
+  proofsOfBuild,
+  resourceRequirements,
+  returnMechanisms,
+  stakeholderUpdates,
+  users,
+} from "./schema";
+import {
+  DETAILED_PROJECTS,
+  FOUNDER_ID,
+  INVESTOR_ID,
+  SUMMARY_PROJECTS,
+  buildAgentEvents,
+  buildProofManifest,
+  daysAgo,
+  daysFromNow,
+  nowIso,
+  sha256,
+} from "./seed-data";
+
+export function clearAllTables() {
+  const sqlite = getSqlite();
+  const tables = [
+    "community_reactions",
+    "community_comments",
+    "community_posts",
+    "proof_artifacts",
+    "proofs_of_build",
+    "agent_events",
+    "agent_runs",
+    "stakeholder_updates",
+    "gemma_messages",
+    "gemma_insights",
+    "allocations",
+    "holdings",
+    "nfts",
+    "return_mechanisms",
+    "resource_requirements",
+    "build_rounds",
+    "projects",
+    "demo_state",
+    "users",
+  ];
+  sqlite.exec("PRAGMA foreign_keys = OFF;");
+  for (const table of tables) {
+    sqlite.exec(`DELETE FROM ${table};`);
+  }
+  sqlite.exec("PRAGMA foreign_keys = ON;");
+}
+
+export function seedDatabase(options?: { force?: boolean }) {
+  const db = getDb();
+  const sqlite = getSqlite();
+
+  if (!options?.force) {
+    const existing = sqlite.prepare("SELECT COUNT(*) as c FROM users").get() as {
+      c: number;
+    };
+    if (existing.c > 0) {
+      return { seeded: false, reason: "already-seeded" as const };
+    }
+  } else {
+    clearAllTables();
+  }
+
+  const createdAt = daysAgo(200);
+
+  db.insert(users)
+    .values([
+      {
+        id: INVESTOR_ID,
+        name: "Alex Rivera",
+        avatarUrl: null,
+        activeRole: "INVESTOR",
+        vibeBalance: 50000,
+        bio: "Demo tubarão investor allocating simulated VIBE across agentic builders.",
+        createdAt,
+      },
+      {
+        id: FOUNDER_ID,
+        name: "Maya Chen",
+        avatarUrl: null,
+        activeRole: "FOUNDER",
+        vibeBalance: 5000,
+        bio: "Founder of CollabMesh and demo operator for stakeholder transparency.",
+        createdAt,
+      },
+    ])
+    .run();
+
+  const detailedRows = DETAILED_PROJECTS.map((p) => ({
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    shortDescription: p.shortDescription,
+    description: p.description,
+    category: p.category,
+    stage: p.stage,
+    status: "ACTIVE" as const,
+    logoEmoji: p.logoEmoji,
+    accentColor: p.accentColor,
+    secondaryColor: p.accentColor === "#2563eb" ? "#22d3ee" : "#a78bfa",
+    repositoryUrl: p.repositoryUrl,
+    websiteUrl: p.websiteUrl,
+    socialLinks: JSON.stringify({
+      website: p.websiteUrl,
+      repository: p.repositoryUrl,
+      telegram: `https://t.me/${p.slug}`,
+      x: `https://x.com/${p.slug}`,
+      discord: `https://discord.gg/${p.slug}`,
+      docs: `https://${p.slug}.demo/docs`,
+    }),
+    brandPattern: "nodes",
+    founderId: FOUNDER_ID,
+    visibility: "PUBLIC" as const,
+    techStack: JSON.stringify(p.techStack),
+    metrics: JSON.stringify(p.metrics),
+    risks: JSON.stringify(p.risks),
+    history: JSON.stringify(p.history),
+    tokenSymbol: p.tokenSymbol,
+    tokenName: p.tokenName,
+    detailed: true,
+    trendingScore: p.trendingScore,
+    createdAt: daysAgo(160),
+  }));
+
+  const summaryRows = SUMMARY_PROJECTS.map((p, i) => ({
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    shortDescription: p.shortDescription,
+    description: `${p.shortDescription} This project is listed in discovery at platform scale. Full diligence deepens as the project grows on VibeFunding.`,
+    category: p.category,
+    stage: p.stage,
+    status: "ACTIVE" as const,
+    logoEmoji: p.logoEmoji,
+    accentColor: p.accentColor,
+    secondaryColor: "#22d3ee",
+    repositoryUrl: `https://github.com/demo/${p.slug}`,
+    websiteUrl: `https://${p.slug}.demo`,
+    socialLinks: JSON.stringify({
+      website: `https://${p.slug}.demo`,
+      repository: `https://github.com/demo/${p.slug}`,
+    }),
+    brandPattern: "flow",
+    founderId: FOUNDER_ID,
+    visibility: "PUBLIC" as const,
+    techStack: JSON.stringify(["TypeScript", "Python", "Open models"]),
+    metrics: JSON.stringify({
+      users: 100 + i * 80,
+      mrr: 1000 + i * 900,
+      commits: 120 + i * 40,
+      tests: 40 + i * 12,
+      uptime: 98 + (i % 2) * 0.5,
+    }),
+    risks: JSON.stringify([
+      "Early-stage execution risk",
+      "Competitive category dynamics",
+      "Resource concentration risk",
+    ]),
+    history: JSON.stringify([
+      {
+        date: daysAgo(90 - i),
+        title: "Public listing",
+        detail: "Project published to VibeFunding discovery.",
+      },
+    ]),
+    tokenSymbol: p.tokenSymbol,
+    tokenName: `${p.name} Token`,
+    detailed: false,
+    trendingScore: p.trendingScore,
+    createdAt: daysAgo(120 - i * 3),
+  }));
+
+  db.insert(projects).values([...detailedRows, ...summaryRows]).run();
+
+  // Build rounds for detailed projects
+  const rounds = [
+    {
+      id: "round-collabmesh-presence",
+      projectId: "proj-collabmesh",
+      title: "Multiplayer Presence Engine",
+      objective:
+        "Ship conflict-aware multiplayer presence so humans and coding agents can co-edit with verifiable contribution trails.",
+      status: "BUILDING" as const,
+      targetValue: 25000,
+      fundedValue: 17200,
+      startsAt: daysAgo(21),
+      endsAt: daysFromNow(25),
+      expectedDeliverables: [
+        "Presence protocol v2 with agent identities",
+        "CRDT conflict suite with 20+ scenarios",
+        "Investor-facing contribution proofs",
+        "Stakeholder progress dashboard",
+      ],
+      risks: [
+        "Concurrency edge cases under 50+ agents",
+        "Latency regressions on large rooms",
+      ],
+      publicSummary:
+        "Fund parallel agent collaboration without sacrificing auditability.",
+      createdAt: daysAgo(21),
+    },
+    {
+      id: "round-collabmesh-prev",
+      projectId: "proj-collabmesh",
+      title: "Agent Presence API",
+      objective: "Expose agents as first-class collaborators in shared rooms.",
+      status: "COMPLETED" as const,
+      targetValue: 12000,
+      fundedValue: 12000,
+      startsAt: daysAgo(90),
+      endsAt: daysAgo(50),
+      expectedDeliverables: [
+        "Agent identity schema",
+        "Presence heartbeat service",
+        "Public SDK methods",
+      ],
+      risks: ["SDK adoption lag"],
+      publicSummary: "Completed previous round establishing agent presence.",
+      createdAt: daysAgo(90),
+    },
+    {
+      id: "round-inferlane-batch",
+      projectId: "proj-inferlane",
+      title: "AMD Batch Routing",
+      objective:
+        "Add GPU-aware batching and transparent cost attribution for open-weight coding routes.",
+      status: "OPEN" as const,
+      targetValue: 18000,
+      fundedValue: 6400,
+      startsAt: daysAgo(10),
+      endsAt: daysFromNow(35),
+      expectedDeliverables: [
+        "ROCm batch worker pool",
+        "Cost attribution ledger",
+        "Fireworks-compatible adapter",
+      ],
+      risks: ["Provider API drift", "Eval quality variance"],
+      publicSummary: "Reduce inference cost while keeping coding quality SLOs.",
+      createdAt: daysAgo(10),
+    },
+    {
+      id: "round-auditforge-packs",
+      projectId: "proj-auditforge",
+      title: "Policy Pack Expansion",
+      objective: "Ship deeper static analysis packs and stakeholder risk digests.",
+      status: "OPEN" as const,
+      targetValue: 10000,
+      fundedValue: 3100,
+      startsAt: daysAgo(7),
+      endsAt: daysFromNow(40),
+      expectedDeliverables: [
+        "Three new policy packs",
+        "Gemma stakeholder risk summary",
+        "False-positive feedback loop",
+      ],
+      risks: ["Alert fatigue", "Coverage gaps"],
+      publicSummary: "Make agent PR security review trustworthy at scale.",
+      createdAt: daysAgo(7),
+    },
+  ];
+
+  // Lightweight rounds for summary projects
+  const summaryRounds = SUMMARY_PROJECTS.map((p, i) => ({
+    id: `round-${p.slug}-open`,
+    projectId: p.id,
+    title: `${p.name} Build Sprint`,
+    objective: `Advance ${p.name} toward the next verifiable delivery milestone.`,
+    status: (i % 3 === 0 ? "BUILDING" : "OPEN") as "OPEN" | "BUILDING",
+    targetValue: 5000 + i * 800,
+    fundedValue: 1200 + i * 350,
+    startsAt: daysAgo(14 - (i % 5)),
+    endsAt: daysFromNow(20 + i),
+    expectedDeliverables: ["Core milestone delivery", "Tests + Proof of Build"],
+    risks: ["Execution risk", "Resource timing"],
+    publicSummary: p.shortDescription,
+    createdAt: daysAgo(14 - (i % 5)),
+  }));
+
+  db.insert(buildRounds)
+    .values(
+      [...rounds, ...summaryRounds].map((r) => ({
+        ...r,
+        expectedDeliverables: JSON.stringify(r.expectedDeliverables),
+        risks: JSON.stringify(r.risks),
+      }))
+    )
+    .run();
+
+  const resources = [
+    {
+      id: "res-cm-vibe",
+      buildRoundId: "round-collabmesh-presence",
+      type: "VIBE" as const,
+      targetAmount: 15000,
+      fundedAmount: 10200,
+      unit: "VIBE",
+      label: "VIBE capital",
+    },
+    {
+      id: "res-cm-gpu",
+      buildRoundId: "round-collabmesh-presence",
+      type: "AMD_GPU_HOURS" as const,
+      targetAmount: 80,
+      fundedAmount: 42,
+      unit: "hours",
+      label: "AMD GPU hours",
+    },
+    {
+      id: "res-cm-agent",
+      buildRoundId: "round-collabmesh-presence",
+      type: "AGENT_HOURS" as const,
+      targetAmount: 120,
+      fundedAmount: 68,
+      unit: "hours",
+      label: "Coding agent hours",
+    },
+    {
+      id: "res-il-vibe",
+      buildRoundId: "round-inferlane-batch",
+      type: "VIBE" as const,
+      targetAmount: 10000,
+      fundedAmount: 4000,
+      unit: "VIBE",
+      label: "VIBE capital",
+    },
+    {
+      id: "res-il-gpu",
+      buildRoundId: "round-inferlane-batch",
+      type: "AMD_GPU_HOURS" as const,
+      targetAmount: 100,
+      fundedAmount: 28,
+      unit: "hours",
+      label: "AMD GPU hours",
+    },
+    {
+      id: "res-af-vibe",
+      buildRoundId: "round-auditforge-packs",
+      type: "VIBE" as const,
+      targetAmount: 7000,
+      fundedAmount: 2100,
+      unit: "VIBE",
+      label: "VIBE capital",
+    },
+    {
+      id: "res-af-tokens",
+      buildRoundId: "round-auditforge-packs",
+      type: "AGENT_TOKENS" as const,
+      targetAmount: 5_000_000,
+      fundedAmount: 1_200_000,
+      unit: "tokens",
+      label: "Agentic credits",
+    },
+  ];
+
+  for (const r of summaryRounds) {
+    resources.push({
+      id: `res-${r.id}-vibe`,
+      buildRoundId: r.id,
+      type: "VIBE",
+      targetAmount: r.targetValue,
+      fundedAmount: r.fundedValue,
+      unit: "VIBE",
+      label: "VIBE capital",
+    });
+  }
+
+  db.insert(resourceRequirements).values(resources).run();
+
+  const returns = [
+    {
+      id: "ret-cm-token",
+      buildRoundId: "round-collabmesh-presence",
+      type: "PROJECT_TOKEN" as const,
+      title: "MESH Project Tokens",
+      description:
+        "MESH tokens representing exposure to CollabMesh value creation under this round's terms.",
+      simulated: true,
+      terms: "1,000 VIBE → 1,000 BU → 800 MESH",
+    },
+    {
+      id: "ret-cm-nft",
+      buildRoundId: "round-collabmesh-presence",
+      type: "NFT" as const,
+      title: "Builder Presence NFT",
+      description:
+        "NFT granting product-access perks and early feature previews.",
+      simulated: true,
+      terms: "Unlocked at ≥ 2,000 Build Units (liquid)",
+    },
+    {
+      id: "ret-cm-access",
+      buildRoundId: "round-collabmesh-presence",
+      type: "PRODUCT_ACCESS" as const,
+      title: "Design partner access",
+      description: "Priority access to multiplayer beta environments.",
+      simulated: true,
+      terms: null,
+    },
+    {
+      id: "ret-il-token",
+      buildRoundId: "round-inferlane-batch",
+      type: "PROJECT_TOKEN" as const,
+      title: "LANE Project Tokens",
+      description: "LANE exposure for compute providers and capital allocators.",
+      simulated: true,
+      terms: "1 BU → 1.1 LANE",
+    },
+    {
+      id: "ret-af-token",
+      buildRoundId: "round-auditforge-packs",
+      type: "PROJECT_TOKEN" as const,
+      title: "AFG Project Tokens",
+      description: "AFG tokens for security-focused contributors.",
+      simulated: true,
+      terms: "1 BU → 1.0 AFG",
+    },
+  ];
+
+  for (const r of summaryRounds) {
+    returns.push({
+      id: `ret-${r.id}-token`,
+      buildRoundId: r.id,
+      type: "PROJECT_TOKEN",
+      title: "Project Tokens",
+      description: "Project token exposure for this build sprint.",
+      simulated: true,
+      terms: "Conversion via Build Units on allocation",
+    });
+  }
+
+  db.insert(returnMechanisms).values(returns).run();
+
+  const nftRows = [
+    {
+      id: "nft-cm-presence",
+      projectId: "proj-collabmesh",
+      name: "Builder Presence Pass",
+      description:
+        "NFT for early multiplayer access, stakeholder briefings, and contributor badge.",
+      imageEmoji: "◈",
+      rarity: "Rare",
+      utility: JSON.stringify([
+        "Early multiplayer beta access",
+        "Monthly founder AMA",
+        "Priority allocation window",
+      ]),
+      simulated: true,
+    },
+    {
+      id: "nft-il-router",
+      projectId: "proj-inferlane",
+      name: "Route Operator Badge",
+      description: "Badge recognizing compute contribution to InferLane routes.",
+      imageEmoji: "▣",
+      rarity: "Uncommon",
+      utility: JSON.stringify(["Dashboard skin", "Operator leaderboard"]),
+      simulated: true,
+    },
+  ];
+
+  db.insert(nfts).values(nftRows).run();
+
+  // Seed holdings for investor
+  db.insert(holdings)
+    .values([
+      {
+        id: "hold-vibe-cash",
+        investorId: INVESTOR_ID,
+        projectId: null,
+        assetType: "VIBE",
+        assetSymbol: "VIBE",
+        assetName: "VIBE Balance",
+        amount: 50000,
+        simulatedValue: 50000,
+        metadata: JSON.stringify({ note: "Wallet balance" }),
+        createdAt: daysAgo(100),
+        updatedAt: nowIso(),
+      },
+      {
+        id: "hold-mesh-seed",
+        investorId: INVESTOR_ID,
+        projectId: "proj-collabmesh",
+        assetType: "PROJECT_TOKEN",
+        assetSymbol: "MESH",
+        assetName: "CollabMesh Token",
+        amount: 3200,
+        simulatedValue: 4160,
+        metadata: JSON.stringify({ source: "Prior Build Round" }),
+        createdAt: daysAgo(55),
+        updatedAt: daysAgo(55),
+      },
+      {
+        id: "hold-lane-seed",
+        investorId: INVESTOR_ID,
+        projectId: "proj-inferlane",
+        assetType: "PROJECT_TOKEN",
+        assetSymbol: "LANE",
+        assetName: "InferLane Token",
+        amount: 1100,
+        simulatedValue: 1320,
+        metadata: JSON.stringify({ source: "Early allocation" }),
+        createdAt: daysAgo(20),
+        updatedAt: daysAgo(20),
+      },
+      {
+        id: "hold-nft-cm",
+        investorId: INVESTOR_ID,
+        projectId: "proj-collabmesh",
+        assetType: "NFT",
+        assetSymbol: "MESH-NFT",
+        assetName: "Builder Presence Pass",
+        amount: 1,
+        simulatedValue: 500,
+        metadata: JSON.stringify({ nftId: "nft-cm-presence" }),
+        createdAt: daysAgo(55),
+        updatedAt: daysAgo(55),
+      },
+    ])
+    .run();
+
+  db.insert(allocations)
+    .values([
+      {
+        id: "alloc-seed-cm",
+        investorId: INVESTOR_ID,
+        buildRoundId: "round-collabmesh-prev",
+        projectId: "proj-collabmesh",
+        resourceType: "VIBE",
+        amount: 4000,
+        normalizedValue: 4000,
+        buildUnits: 4000,
+        rewardTokens: 3200,
+        rewardNftId: "nft-cm-presence",
+        settlementStatus: "IMMEDIATE",
+        verifiedAt: daysAgo(55),
+        createdAt: daysAgo(55),
+      },
+      {
+        id: "alloc-seed-il",
+        investorId: INVESTOR_ID,
+        buildRoundId: "round-inferlane-batch",
+        projectId: "proj-inferlane",
+        resourceType: "VIBE",
+        amount: 1000,
+        normalizedValue: 1000,
+        buildUnits: 1000,
+        rewardTokens: 1100,
+        rewardNftId: null,
+        settlementStatus: "IMMEDIATE",
+        verifiedAt: daysAgo(20),
+        createdAt: daysAgo(20),
+      },
+    ])
+    .run();
+
+  // Agent runs
+  const runCm = {
+    id: "run-collabmesh-presence-1",
+    projectId: "proj-collabmesh",
+    buildRoundId: "round-collabmesh-presence",
+    taskTitle: "Implement multi-agent presence heartbeats",
+    taskDescription:
+      "Add resilient presence heartbeats and conflict-safe room membership for concurrent coding agents.",
+    agentName: "Forge-1",
+    harness: "OpenCode",
+    model: "DeepSeek-V3",
+    provider: "Fireworks / open-weight",
+    status: "COMPLETED" as const,
+    startedAt: daysAgo(3),
+    completedAt: daysAgo(3),
+    publicSummary:
+      "Shipped presence heartbeats, conflict suite coverage, and sanitized commit evidence.",
+    visibility: "PUBLIC" as const,
+    computeSource: "AMD Developer Cloud · Instinct GPU",
+    inputTokens: 84200,
+    outputTokens: 19600,
+    computeTimeSeconds: 742,
+    filesChanged: 7,
+    linesAdded: 412,
+    linesRemoved: 88,
+    testsTotal: 24,
+    testsPassed: 24,
+    testsFailed: 0,
+    commitHash: "a3f8c91d2e7b4f0a91cd",
+    replayLabel: "Recorded real run",
+    createdAt: daysAgo(3),
+  };
+
+  const runIl = {
+    id: "run-inferlane-batch-1",
+    projectId: "proj-inferlane",
+    buildRoundId: "round-inferlane-batch",
+    taskTitle: "Prototype ROCm batch worker",
+    taskDescription: "Scaffold AMD ROCm batch worker with cost attribution hooks.",
+    agentName: "LaneBot",
+    harness: "Codex CLI",
+    model: "GLM-4",
+    provider: "Fireworks / open-weight",
+    status: "COMPLETED" as const,
+    startedAt: daysAgo(5),
+    completedAt: daysAgo(5),
+    publicSummary: "Batch worker scaffold complete with attribution stubs.",
+    visibility: "PUBLIC" as const,
+    computeSource: "AMD Developer Cloud",
+    inputTokens: 42100,
+    outputTokens: 11200,
+    computeTimeSeconds: 510,
+    filesChanged: 4,
+    linesAdded: 260,
+    linesRemoved: 31,
+    testsTotal: 12,
+    testsPassed: 12,
+    testsFailed: 0,
+    commitHash: "b19e44aa81cd02ff",
+    replayLabel: "Demo replay",
+    createdAt: daysAgo(5),
+  };
+
+  db.insert(agentRuns).values([runCm, runIl]).run();
+
+  const cmEvents = buildAgentEvents(runCm.id, "CollabMesh");
+  const ilEvents = buildAgentEvents(runIl.id, "InferLane").map((e, i) => ({
+    ...e,
+    id: `${runIl.id}-evt-${i + 1}`,
+    runId: runIl.id,
+  }));
+  db.insert(agentEvents).values([...cmEvents, ...ilEvents]).run();
+
+  const cmArtifacts = [
+    {
+      name: "presence-diff.patch",
+      type: "DIFF" as const,
+      hash: sha256("presence-diff-content-v1"),
+      size: 18420,
+      contentPreview:
+        "+++ packages/presence/heartbeat.ts\n+ export function startHeartbeat(roomId: string) { ... }",
+    },
+    {
+      name: "test-report.json",
+      type: "TEST_REPORT" as const,
+      hash: sha256("test-report-24-pass"),
+      size: 3200,
+      contentPreview: '{"total":24,"passed":24,"failed":0}',
+    },
+    {
+      name: "commit.txt",
+      type: "COMMIT" as const,
+      hash: sha256(runCm.commitHash),
+      size: 220,
+      contentPreview: `commit ${runCm.commitHash}\nImplement multi-agent presence heartbeats`,
+    },
+    {
+      name: "build.log",
+      type: "LOG" as const,
+      hash: sha256("build-log-sanitized"),
+      size: 5400,
+      contentPreview: "build ok · 742s · secrets redacted",
+    },
+  ];
+
+  const proofCmMeta = buildProofManifest({
+    projectId: runCm.projectId,
+    buildRoundId: runCm.buildRoundId!,
+    agentRunId: runCm.id,
+    taskTitle: runCm.taskTitle,
+    agentName: runCm.agentName,
+    harness: runCm.harness,
+    model: runCm.model,
+    provider: runCm.provider,
+    computeSource: runCm.computeSource,
+    filesChanged: runCm.filesChanged,
+    linesAdded: runCm.linesAdded,
+    linesRemoved: runCm.linesRemoved,
+    testsTotal: runCm.testsTotal,
+    testsPassed: runCm.testsPassed,
+    testsFailed: runCm.testsFailed,
+    commitHash: runCm.commitHash,
+    artifacts: cmArtifacts,
+  });
+
+  const proofCmId = "proof-collabmesh-1";
+  db.insert(proofsOfBuild)
+    .values({
+      id: proofCmId,
+      projectId: runCm.projectId,
+      buildRoundId: runCm.buildRoundId,
+      agentRunId: runCm.id,
+      taskTitle: runCm.taskTitle,
+      taskDescription: runCm.taskDescription,
+      agentName: runCm.agentName,
+      harness: runCm.harness,
+      model: runCm.model,
+      provider: runCm.provider,
+      computeSource: runCm.computeSource,
+      inputTokens: runCm.inputTokens,
+      outputTokens: runCm.outputTokens,
+      computeTimeSeconds: runCm.computeTimeSeconds,
+      normalizedCost: 42.5,
+      filesChanged: runCm.filesChanged,
+      linesAdded: runCm.linesAdded,
+      linesRemoved: runCm.linesRemoved,
+      testsTotal: runCm.testsTotal,
+      testsPassed: runCm.testsPassed,
+      testsFailed: runCm.testsFailed,
+      commitHash: runCm.commitHash,
+      repositoryUrl: "https://github.com/demo/collabmesh",
+      artifactRootHash: proofCmMeta.artifactRootHash,
+      manifestHash: proofCmMeta.manifestHash,
+      manifestJson: proofCmMeta.manifestJson,
+      verificationStatus: "HASH_VERIFIED",
+      publicSummary:
+        "Recorded agent execution delivered presence heartbeats with full test pass and commit evidence. This proves work occurred with the captured resources — it does not guarantee production quality.",
+      gemmaSummary:
+        "In plain language: the coding agent finished the multiplayer heartbeat feature, all automated tests passed, and a commit was recorded. Investors can verify the artifact hashes. Human review is still recommended before treating this as product-ready.",
+      createdAt: daysAgo(3),
+    })
+    .run();
+
+  db.insert(proofArtifacts)
+    .values(
+      cmArtifacts.map((a, i) => ({
+        id: `art-cm-${i + 1}`,
+        proofId: proofCmId,
+        type: a.type,
+        name: a.name,
+        path: `/data/proofs/${proofCmId}/${a.name}`,
+        hash: a.hash,
+        size: a.size,
+        visibility: "PUBLIC" as const,
+        contentPreview: a.contentPreview,
+      }))
+    )
+    .run();
+
+  const ilArtifacts = [
+    {
+      name: "batch-worker.diff",
+      type: "DIFF" as const,
+      hash: sha256("il-diff-v1"),
+      size: 9200,
+      contentPreview: "+++ workers/rocm_batch.py",
+    },
+    {
+      name: "tests.json",
+      type: "TEST_REPORT" as const,
+      hash: sha256("il-tests-12"),
+      size: 1800,
+      contentPreview: '{"total":12,"passed":12}',
+    },
+  ];
+  const proofIlMeta = buildProofManifest({
+    projectId: runIl.projectId,
+    buildRoundId: runIl.buildRoundId!,
+    agentRunId: runIl.id,
+    taskTitle: runIl.taskTitle,
+    agentName: runIl.agentName,
+    harness: runIl.harness,
+    model: runIl.model,
+    provider: runIl.provider,
+    computeSource: runIl.computeSource,
+    filesChanged: runIl.filesChanged,
+    linesAdded: runIl.linesAdded,
+    linesRemoved: runIl.linesRemoved,
+    testsTotal: runIl.testsTotal,
+    testsPassed: runIl.testsPassed,
+    testsFailed: runIl.testsFailed,
+    commitHash: runIl.commitHash,
+    artifacts: ilArtifacts,
+  });
+
+  const proofIlId = "proof-inferlane-1";
+  db.insert(proofsOfBuild)
+    .values({
+      id: proofIlId,
+      projectId: runIl.projectId,
+      buildRoundId: runIl.buildRoundId,
+      agentRunId: runIl.id,
+      taskTitle: runIl.taskTitle,
+      taskDescription: runIl.taskDescription,
+      agentName: runIl.agentName,
+      harness: runIl.harness,
+      model: runIl.model,
+      provider: runIl.provider,
+      computeSource: runIl.computeSource,
+      inputTokens: runIl.inputTokens,
+      outputTokens: runIl.outputTokens,
+      computeTimeSeconds: runIl.computeTimeSeconds,
+      normalizedCost: 21.0,
+      filesChanged: runIl.filesChanged,
+      linesAdded: runIl.linesAdded,
+      linesRemoved: runIl.linesRemoved,
+      testsTotal: runIl.testsTotal,
+      testsPassed: runIl.testsPassed,
+      testsFailed: runIl.testsFailed,
+      commitHash: runIl.commitHash,
+      repositoryUrl: "https://github.com/demo/inferlane",
+      artifactRootHash: proofIlMeta.artifactRootHash,
+      manifestHash: proofIlMeta.manifestHash,
+      manifestJson: proofIlMeta.manifestJson,
+      verificationStatus: "HASH_VERIFIED",
+      publicSummary:
+        "ROCm batch worker scaffold recorded with tests passing. Evidence of execution only — not a quality warranty.",
+      gemmaSummary:
+        "InferLane's agent scaffolded an AMD batch worker and passed its automated checks. This is progress evidence for the open Build Round.",
+      createdAt: daysAgo(5),
+    })
+    .run();
+
+  db.insert(proofArtifacts)
+    .values(
+      ilArtifacts.map((a, i) => ({
+        id: `art-il-${i + 1}`,
+        proofId: proofIlId,
+        type: a.type,
+        name: a.name,
+        path: `/data/proofs/${proofIlId}/${a.name}`,
+        hash: a.hash,
+        size: a.size,
+        visibility: "PUBLIC" as const,
+        contentPreview: a.contentPreview,
+      }))
+    )
+    .run();
+
+  db.insert(stakeholderUpdates)
+    .values([
+      {
+        id: "update-cm-1",
+        projectId: "proj-collabmesh",
+        buildRoundId: "round-collabmesh-presence",
+        title: "Presence engine mid-round update",
+        body: `We completed the multi-agent presence heartbeat milestone.
+
+**What shipped**
+- Heartbeat protocol for concurrent agents
+- 24/24 tests passing
+- Proof of Build published for investor review
+
+**What's next**
+- Conflict suite expansion
+- Stakeholder dashboard polish
+
+*Update published for investors.*`,
+        status: "PUBLISHED",
+        authorId: FOUNDER_ID,
+        publishedAt: daysAgo(2),
+        createdAt: daysAgo(2),
+        updatedAt: daysAgo(2),
+      },
+      {
+        id: "update-cm-draft",
+        projectId: "proj-collabmesh",
+        buildRoundId: "round-collabmesh-presence",
+        title: "Draft: next sprint transparency note",
+        body: "Draft prepared for founder review before investor publication.",
+        status: "DRAFT",
+        authorId: FOUNDER_ID,
+        publishedAt: null,
+        createdAt: daysAgo(1),
+        updatedAt: daysAgo(1),
+      },
+    ])
+    .run();
+
+  db.insert(gemmaInsights)
+    .values([
+      {
+        id: "insight-portfolio-brief",
+        context: "INVESTOR_PORTFOLIO",
+        projectId: null,
+        title: "Portfolio briefing",
+        summary:
+          "Your portfolio is concentrated in Developer Tools and AI Infrastructure. CollabMesh shows active agent delivery with a verified Proof of Build. InferLane remains early in its open round — additional VIBE or GPU hours would deepen exposure while diversifying compute risk.",
+        risks: JSON.stringify([
+          "Category concentration in developer tooling",
+          "Open rounds still need funding to complete deliverables",
+        ]),
+        strengths: JSON.stringify([
+          "Evidence of execution via Proofs of Build",
+          "Mix of Project Tokens and NFT utility",
+        ]),
+        questions: JSON.stringify([
+          "Do you want more GPU-hour exposure vs pure VIBE?",
+          "Should we diversify into Security (AuditForge)?",
+        ]),
+        portfolioImpact:
+          "Allocating into AuditForge would reduce single-category concentration.",
+        sources: JSON.stringify(["holdings", "proofs", "build rounds"]),
+        provider: "DEMO",
+        generatedAt: nowIso(),
+      },
+      {
+        id: "insight-cm-dd",
+        context: "PROJECT_DILIGENCE",
+        projectId: "proj-collabmesh",
+        title: "CollabMesh due diligence",
+        summary:
+          "CollabMesh is past pure prototype stage: design partners, prior completed round, and a live BUILDING round with agent activity. Main risk is concurrency under heavy agent load. Returns via MESH tokens and Presence NFT follow Build Unit conversion.",
+        risks: JSON.stringify([
+          "CRDT concurrency edge cases",
+          "Infra cost growth with multiplayer usage",
+        ]),
+        strengths: JSON.stringify([
+          "Prior completed Build Round",
+          "Recent HASH_VERIFIED Proof of Build",
+          "Clear deliverables and resource mix",
+        ]),
+        questions: JSON.stringify([
+          "What is the human review process after agent commits?",
+          "How are agent contributions attributed for token rewards?",
+        ]),
+        portfolioImpact:
+          "Additional allocation increases Developer Tools concentration.",
+        sources: JSON.stringify(["project", "rounds", "proofs", "agent runs"]),
+        provider: "CACHE",
+        generatedAt: nowIso(),
+      },
+    ])
+    .run();
+
+  db.insert(demoState)
+    .values({
+      id: "default",
+      activeRole: "INVESTOR",
+      activeUserId: INVESTOR_ID,
+      updatedAt: nowIso(),
+    })
+    .run();
+
+  // Community feed for detailed projects
+  db.insert(communityPosts)
+    .values([
+      {
+        id: "cpost-cm-1",
+        projectId: "proj-collabmesh",
+        authorName: "Maya Chen",
+        authorRole: "FOUNDER",
+        body: "Presence heartbeats shipped with full tests. Proof of Build is live for MESH holders — feedback welcome on the multi-agent room UX.",
+        buildRoundId: "round-collabmesh-presence",
+        proofId: "proof-collabmesh-1",
+        agentRunId: "run-collabmesh-presence-1",
+        likes: 12,
+        dislikes: 0,
+        createdAt: daysAgo(2),
+      },
+      {
+        id: "cpost-cm-2",
+        projectId: "proj-collabmesh",
+        authorName: "Alex Rivera",
+        authorRole: "INVESTOR",
+        body: "Allocated VIBE into the multiplayer round. Watching agent replay now — the path from capital to verified work is clear.",
+        buildRoundId: "round-collabmesh-presence",
+        proofId: null,
+        agentRunId: null,
+        likes: 5,
+        dislikes: 0,
+        createdAt: daysAgo(1),
+      },
+      {
+        id: "cpost-cm-3",
+        projectId: "proj-collabmesh",
+        authorName: "Nova GPU Co-op",
+        authorRole: "COMPUTE_PROVIDER",
+        body: "Pledging AMD GPU hours for the next conflict-suite sprint. Looking forward to verified contribution settlement.",
+        buildRoundId: "round-collabmesh-presence",
+        proofId: null,
+        agentRunId: null,
+        likes: 8,
+        dislikes: 1,
+        createdAt: daysAgo(1),
+      },
+      {
+        id: "cpost-il-1",
+        projectId: "proj-inferlane",
+        authorName: "Maya Chen",
+        authorRole: "TEAM",
+        body: "ROCm batch worker scaffold is in — open round still needs GPU hours and VIBE to hit target.",
+        buildRoundId: "round-inferlane-batch",
+        proofId: "proof-inferlane-1",
+        agentRunId: "run-inferlane-batch-1",
+        likes: 4,
+        dislikes: 0,
+        createdAt: daysAgo(4),
+      },
+      {
+        id: "cpost-af-1",
+        projectId: "proj-auditforge",
+        authorName: "Maya Chen",
+        authorRole: "FOUNDER",
+        body: "Policy pack expansion is live for allocation. Security reviewers and agentic credit contributors welcome.",
+        buildRoundId: "round-auditforge-packs",
+        proofId: null,
+        agentRunId: null,
+        likes: 3,
+        dislikes: 0,
+        createdAt: daysAgo(3),
+      },
+    ])
+    .run();
+
+  db.insert(communityComments)
+    .values([
+      {
+        id: "ccom-1",
+        postId: "cpost-cm-1",
+        authorName: "Jordan Lee",
+        authorRole: "TOKEN_HOLDER",
+        body: "Great transparency on the proof hashes — holding MESH with more confidence.",
+        createdAt: daysAgo(2),
+      },
+      {
+        id: "ccom-2",
+        postId: "cpost-cm-2",
+        authorName: "Maya Chen",
+        authorRole: "FOUNDER",
+        body: "Appreciate the allocation — join the agent workspace if you want founder-level timeline context.",
+        createdAt: daysAgo(1),
+      },
+    ])
+    .run();
+
+  return { seeded: true as const };
+}
+
+export function resetDemo() {
+  return seedDatabase({ force: true });
+}
+
+

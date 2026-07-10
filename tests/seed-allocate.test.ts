@@ -1,0 +1,76 @@
+import fs from "fs";
+import path from "path";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+const testDb = path.join(process.cwd(), "data", "test-app.db");
+
+describe("seed and allocate", () => {
+  let allocateToRound: typeof import("../src/lib/portfolio/allocate").allocateToRound;
+  let getPortfolio: typeof import("../src/lib/queries/portfolio").getPortfolio;
+  let seedDatabase: typeof import("../src/lib/db/seed").seedDatabase;
+  let resetDemo: typeof import("../src/lib/db/seed").resetDemo;
+  let INVESTOR_ID: string;
+
+  beforeAll(async () => {
+    process.env.DATABASE_URL = `file:${testDb}`;
+    process.env.DEMO_MODE = "true";
+    fs.mkdirSync(path.dirname(testDb), { recursive: true });
+    for (const f of [testDb, `${testDb}-shm`, `${testDb}-wal`]) {
+      if (fs.existsSync(f)) fs.unlinkSync(f);
+    }
+
+    const seedMod = await import("../src/lib/db/seed");
+    const allocateMod = await import("../src/lib/portfolio/allocate");
+    const portfolioMod = await import("../src/lib/queries/portfolio");
+    const ids = await import("../src/lib/db/seed-data");
+
+    seedDatabase = seedMod.seedDatabase;
+    resetDemo = seedMod.resetDemo;
+    allocateToRound = allocateMod.allocateToRound;
+    getPortfolio = portfolioMod.getPortfolio;
+    INVESTOR_ID = ids.INVESTOR_ID;
+
+    seedDatabase({ force: true });
+  });
+
+  afterAll(async () => {
+    try {
+      const { getSqlite } = await import("../src/lib/db");
+      getSqlite().close();
+    } catch {
+      /* ignore */
+    }
+    for (const f of [testDb, `${testDb}-shm`, `${testDb}-wal`]) {
+      if (fs.existsSync(f)) fs.unlinkSync(f);
+    }
+  });
+
+  it("seeds investor and projects", () => {
+    const portfolio = getPortfolio(INVESTOR_ID);
+    expect(portfolio.investor?.name).toBeTruthy();
+    expect(portfolio.vibeBalance).toBeGreaterThan(0);
+    expect(portfolio.tokenHoldings.length).toBeGreaterThan(0);
+  });
+
+  it("persists allocation and holdings", () => {
+    const before = getPortfolio(INVESTOR_ID);
+    const result = allocateToRound({
+      investorId: INVESTOR_ID,
+      buildRoundId: "round-collabmesh-presence",
+      resourceType: "VIBE",
+      amount: 500,
+    });
+    expect(result.rewardTokens).toBeGreaterThan(0);
+    expect(result.settlementStatus).toBe("IMMEDIATE");
+
+    const after = getPortfolio(INVESTOR_ID);
+    expect(after.vibeBalance).toBe(before.vibeBalance - 500);
+    expect(after.allocations.length).toBeGreaterThan(before.allocations.length);
+  });
+
+  it("reset restores demo state", () => {
+    resetDemo();
+    const portfolio = getPortfolio(INVESTOR_ID);
+    expect(portfolio.vibeBalance).toBe(50000);
+  });
+});

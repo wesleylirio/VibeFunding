@@ -1,0 +1,377 @@
+@import "tailwindcss";
+
+/* ─── Brand tokens: VibeFunding ─── */
+:root {
+  --vf-flow: #3d7eff;
+  --vf-compute: #22d3ee;
+  --vf-agent: #8b5cf6;
+  --vf-proof: #10b981;
+  --vf-value: #f59e0b;
+  --vf-brand: #5b8cff;
+  --vf-brand-deep: #3b6ef5;
+  --radius: 14px;
+}
+
+/* Light theme (default intentional design) */
+:root,
+html.light {
+  color-scheme: light;
+  --background: #f4f6fb;
+  --background-elevated: #ffffff;
+  --foreground: #0f1420;
+  --card: #ffffff;
+  --card-elevated: #f8fafc;
+  --card-foreground: #0f1420;
+  --muted: #eef1f7;
+  --muted-foreground: #5b6478;
+  --border: rgba(15, 20, 32, 0.1);
+  --border-strong: rgba(15, 20, 32, 0.16);
+  --accent: #3b6ef5;
+  --accent-soft: rgba(59, 110, 245, 0.1);
+  --accent-glow: rgba(59, 110, 245, 0.2);
+  --success: #059669;
+  --success-soft: rgba(5, 150, 105, 0.1);
+  --warning: #d97706;
+  --warning-soft: rgba(217, 119, 6, 0.1);
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.1);
+  --sidebar: #0b1020;
+  --sidebar-foreground: #eef1f8;
+  --gemma: #7c5cfc;
+  --gemma-soft: rgba(124, 92, 252, 0.12);
+  --gemma-glow: rgba(124, 92, 252, 0.35);
+  --vibe: #0284c7;
+  --shadow: 0 1px 2px rgba(15, 20, 32, 0.04), 0 12px 32px rgba(15, 20, 32, 0.06);
+  --gradient-hero: radial-gradient(
+      1000px 480px at 8% -8%,
+      rgba(59, 110, 245, 0.12),
+      transparent 55%
+    ),
+    radial-gradient(
+      700px 360px at 92% 0%,
+      rgba(124, 92, 252, 0.08),
+      transparent 50%
+    ),
+    var(--background);
+  --chart-grid: rgba(15, 20, 32, 0.06);
+  --chart-label: #5b6478;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: rgba(15, 20, 32, 0.1);
+}
+
+html.dark {
+  color-scheme: dark;
+  --background: #07080c;
+  --background-elevated: #0c0e14;
+  --foreground: #f2f3f7;
+  --card: #10131a;
+  --card-elevated: #141822;
+  --card-foreground: #f2f3f7;
+  --muted: #171b26;
+  --muted-foreground: #8b93a7;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --accent: #5b8cff;
+  --accent-soft: rgba(91, 140, 255, 0.14);
+  --accent-glow: rgba(91, 140, 255, 0.35);
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.12);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.12);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.12);
+  --sidebar: #05060a;
+  --sidebar-foreground: #e8eaf2;
+  --gemma: #a78bfa;
+  --gemma-soft: rgba(167, 139, 250, 0.14);
+  --gemma-glow: rgba(167, 139, 250, 0.45);
+  --vibe: #38bdf8;
+  --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 12px 40px rgba(0, 0, 0, 0.35);
+  --gradient-hero: radial-gradient(
+      1200px 500px at 10% -10%,
+      rgba(91, 140, 255, 0.18),
+      transparent 55%
+    ),
+    radial-gradient(
+      800px 400px at 90% 0%,
+      rgba(167, 139, 250, 0.12),
+      transparent 50%
+    ),
+    var(--background);
+  --chart-grid: rgba(255, 255, 255, 0.06);
+  --chart-label: #8b93a7;
+  --chart-tooltip-bg: #141822;
+  --chart-tooltip-border: rgba(255, 255, 255, 0.1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-elevated: var(--background-elevated);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-elevated: var(--card-elevated);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-gemma: var(--gemma);
+  --color-gemma-soft: var(--gemma-soft);
+  --color-vibe: var(--vibe);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--gradient-hero);
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent) 35%, transparent);
+}
+
+.card-surface {
+  background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--foreground) 3%, transparent),
+      transparent 40%
+    ),
+    var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.card-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    600px 120px at 20% 0%,
+    var(--accent-glow),
+    transparent 60%
+  );
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.glass {
+  background: color-mix(in oklab, var(--card) 85%, transparent);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+}
+
+.brand-flow-line {
+  background: linear-gradient(
+    90deg,
+    var(--vf-flow),
+    var(--vf-compute),
+    var(--vf-agent),
+    var(--vf-proof)
+  );
+}
+
+.brand-node {
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 15%, transparent);
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--foreground) 20%, transparent)
+    transparent;
+}
+
+.prose-product p {
+  margin-bottom: 0.75rem;
+  line-height: 1.65;
+  color: var(--muted-foreground);
+}
+
+.prose-product ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.prose-product strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.prose-product h2,
+.prose-product h3 {
+  color: var(--foreground);
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes gemma-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--gemma-glow), 0 12px 32px rgba(0, 0, 0, 0.15);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 10px transparent, 0 16px 40px var(--gemma-glow);
+    transform: scale(1.03);
+  }
+}
+
+@keyframes wallet-tick {
+  0% {
+    transform: translateY(4px);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes gemma-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 1.6s ease-in-out infinite;
+}
+
+.animate-gemma-breathe {
+  animation: gemma-breathe 2.8s ease-in-out infinite;
+}
+
+.animate-wallet-tick {
+  animation: wallet-tick 0.45s ease-out;
+}
+
+.animate-reveal-up {
+  animation: reveal-up 0.45s ease-out both;
+}
+
+.animate-flow {
+  animation: flow-dash 1.2s linear infinite;
+}
+
+.project-cover {
+  background-size: cover;
+  background-position: center;
+}
+
+.metric-chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 5.5rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.metric-chip .value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.metric-chip .label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+
+/* Landing flow diagram nodes */
+.flow-step {
+  position: relative;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.flow-step::after {
+  content: "";
+  position: absolute;
+  right: -14px;
+  top: 50%;
+  width: 12px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--vf-flow), var(--vf-agent));
+}
+
+.flow-step:last-child::after {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .flow-step::after {
+    right: 50%;
+    top: auto;
+    bottom: -14px;
+    width: 2px;
+    height: 12px;
+    transform: translateX(50%);
+  }
+}
