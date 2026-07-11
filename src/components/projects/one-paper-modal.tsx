@@ -20,6 +20,7 @@ type Round = {
 export function OnePaperModal({
   project,
   activeRound,
+  trigger = "button",
 }: {
   project: {
     name: string;
@@ -31,14 +32,27 @@ export function OnePaperModal({
     risks: string[];
   };
   activeRound: Round;
+  /** "tab" matches ProjectTabs style next to Overview */
+  trigger?: "button" | "tab";
 }) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <Button type="button" variant="secondary" onClick={() => setOpen(true)}>
-        <FileText className="h-3.5 w-3.5" /> One-Paper
-      </Button>
+      {trigger === "tab" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+        >
+          <FileText className="h-3.5 w-3.5" />
+          One-Paper
+        </button>
+      ) : (
+        <Button type="button" variant="secondary" onClick={() => setOpen(true)}>
+          <FileText className="h-3.5 w-3.5" /> One-Paper
+        </Button>
+      )}
       {open ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl border border-border bg-card shadow-2xl sm:rounded-3xl">
@@ -52,7 +66,7 @@ export function OnePaperModal({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-2 text-muted-foreground hover:bg-white/5"
+                className="rounded-lg p-2 text-muted-foreground hover:bg-muted"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -93,9 +107,9 @@ export function OnePaperModal({
                   Economic model
                 </h3>
                 <p className="mt-1 text-muted-foreground">
-                  Resources convert to Build Units. Liquid capital (VIBE) settles
-                  immediately into Project Tokens. Productive capacity (GPU hours, agent
-                  hours, agentic credits) settles after contribution verification.
+                  Contribute with VIBE. VIBE converts to AMD GPU Cloud Credits for
+                  agent execution (50 VIBE = 1 AMD GPU Hour). Project Tokens are
+                  estimated from Build Units and settle with your contribution.
                 </p>
                 {project.tokenSymbol ? (
                   <p className="mt-2 text-muted-foreground">

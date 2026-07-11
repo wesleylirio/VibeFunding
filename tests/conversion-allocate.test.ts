@@ -2,24 +2,30 @@ import fs from "fs";
 import path from "path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  VIBE_PER_AMD_GPU_HOUR,
   estimateProjectTokens,
+  formatAmdGpuHours,
   previewAllocation,
   toBuildUnits,
+  vibeToAmdGpuHours,
 } from "../src/lib/resources/conversion";
 
 const testDb = path.join(process.cwd(), "data", "test-alloc-v2.db");
 
-describe("Build Units conversion", () => {
+describe("VIBE → AMD GPU conversion (MVP)", () => {
   it("converts VIBE 1:1 to Build Units", () => {
     expect(toBuildUnits("VIBE", 1000)).toBe(1000);
   });
 
-  it("converts agent hours with productive rate", () => {
-    expect(toBuildUnits("AGENT_HOURS", 20)).toBe(2000);
+  it("converts VIBE to AMD GPU Hours at fixed rate", () => {
+    expect(VIBE_PER_AMD_GPU_HOUR).toBe(50);
+    expect(vibeToAmdGpuHours(50)).toBe(1);
+    expect(vibeToAmdGpuHours(1000)).toBe(20);
+    expect(formatAmdGpuHours(20)).toMatch(/20/);
   });
 
-  it("estimates MESH from Build Units", () => {
-    // 1000 VIBE → 1000 BU → 800 MESH
+  it("estimates MESH from Build Units and shows AMD credits", () => {
+    // 1000 VIBE → 1000 BU → 800 MESH → 20 AMD GPU Hours
     expect(estimateProjectTokens("proj-collabmesh", 1000)).toBe(800);
     const preview = previewAllocation({
       projectId: "proj-collabmesh",
@@ -28,25 +34,14 @@ describe("Build Units conversion", () => {
     });
     expect(preview.buildUnits).toBe(1000);
     expect(preview.estimatedTokens).toBe(800);
+    expect(preview.amdGpuHours).toBe(20);
     expect(preview.requiresVerification).toBe(false);
-  });
-
-  it("marks productive resources as pending verification", () => {
-    const preview = previewAllocation({
-      projectId: "proj-collabmesh",
-      resourceType: "AGENT_HOURS",
-      amount: 20,
-    });
-    expect(preview.buildUnits).toBe(2000);
-    expect(preview.estimatedTokens).toBe(1600);
-    expect(preview.requiresVerification).toBe(true);
-    expect(preview.settlement).toBe("PENDING_VERIFICATION");
+    expect(preview.conversionLabel).toContain("50 VIBE");
   });
 });
 
 describe("allocation settlement", () => {
   let allocateToRound: typeof import("../src/lib/portfolio/allocate").allocateToRound;
-  let verifyContribution: typeof import("../src/lib/portfolio/allocate").verifyContribution;
   let getPortfolio: typeof import("../src/lib/queries/portfolio").getPortfolio;
   let seedDatabase: typeof import("../src/lib/db/seed").seedDatabase;
   let resetDemo: typeof import("../src/lib/db/seed").resetDemo;
@@ -68,7 +63,6 @@ describe("allocation settlement", () => {
     seedDatabase = seedMod.seedDatabase;
     resetDemo = seedMod.resetDemo;
     allocateToRound = allocateMod.allocateToRound;
-    verifyContribution = allocateMod.verifyContribution;
     getPortfolio = portfolioMod.getPortfolio;
     INVESTOR_ID = ids.INVESTOR_ID;
 
@@ -87,7 +81,7 @@ describe("allocation settlement", () => {
     }
   });
 
-  it("settles VIBE immediately with tokens", () => {
+  it("settles VIBE immediately with tokens and AMD GPU hours", () => {
     const before = getPortfolio(INVESTOR_ID);
     const result = allocateToRound({
       investorId: INVESTOR_ID,
@@ -98,8 +92,20 @@ describe("allocation settlement", () => {
     expect(result.settlementStatus).toBe("IMMEDIATE");
     expect(result.tokensReleased).toBe(400); // 500 BU * 0.8
     expect(result.requiresVerification).toBe(false);
+    expect(result.amdGpuHours).toBe(10); // 500 / 50
     const after = getPortfolio(INVESTOR_ID);
     expect(after.vibeBalance).toBe(before.vibeBalance - 500);
+  });
+
+  it("rejects non-VIBE contributions", () => {
+    expect(() =>
+      allocateToRound({
+        investorId: INVESTOR_ID,
+        buildRoundId: "round-collabmesh-presence",
+        resourceType: "AGENT_HOURS",
+        amount: 10,
+      })
+    ).toThrow(/Contribute with VIBE/i);
   });
 
   it("rejects excessive VIBE amount", () => {
@@ -122,36 +128,6 @@ describe("allocation settlement", () => {
         amount: 0,
       })
     ).toThrow(/positive/);
-  });
-
-  it("keeps productive allocation pending until verified", () => {
-    const before = getPortfolio(INVESTOR_ID);
-    const meshBefore =
-      before.tokenHoldings.find((h) => h.assetSymbol === "MESH")?.amount ?? 0;
-
-    const result = allocateToRound({
-      investorId: INVESTOR_ID,
-      buildRoundId: "round-collabmesh-presence",
-      resourceType: "AGENT_HOURS",
-      amount: 10,
-    });
-    expect(result.settlementStatus).toBe("PENDING_VERIFICATION");
-    expect(result.tokensReleased).toBe(0);
-    expect(result.rewardTokens).toBe(800); // 10*100*0.8
-
-    const mid = getPortfolio(INVESTOR_ID);
-    const meshMid =
-      mid.tokenHoldings.find((h) => h.assetSymbol === "MESH")?.amount ?? 0;
-    expect(meshMid).toBe(meshBefore);
-
-    const verified = verifyContribution(result.allocationId);
-    expect(verified.settlementStatus).toBe("REWARD_RELEASED");
-    expect(verified.tokensReleased).toBe(800);
-
-    const after = getPortfolio(INVESTOR_ID);
-    const meshAfter =
-      after.tokenHoldings.find((h) => h.assetSymbol === "MESH")?.amount ?? 0;
-    expect(meshAfter).toBe(meshBefore + 800);
   });
 
   it("grants NFT at liquid threshold", () => {

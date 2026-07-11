@@ -53,12 +53,15 @@ export function Markdown({
 }
 
 function formatInline(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+  // **bold**, `code`, [label](/path)
+  const parts = text.split(
+    /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g
+  );
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
         <strong key={i} className="font-semibold text-foreground">
-          {part.slice(2, -2)}
+          {formatInline(part.slice(2, -2))}
         </strong>
       );
     }
@@ -71,6 +74,25 @@ function formatInline(text: string): React.ReactNode {
           {part.slice(1, -1)}
         </code>
       );
+    }
+    const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (link) {
+      const href = link[2];
+      const safe =
+        href.startsWith("/") ||
+        href.startsWith("https://") ||
+        href.startsWith("http://");
+      if (safe) {
+        return (
+          <a
+            key={i}
+            href={href}
+            className="font-semibold text-gemma underline-offset-2 hover:underline"
+          >
+            {link[1]}
+          </a>
+        );
+      }
     }
     return <span key={i}>{part}</span>;
   });

@@ -9,7 +9,7 @@ export const Textarea = forwardRef<
     <textarea
       ref={ref}
       className={cn(
-        "min-h-28 w-full rounded-xl border border-border bg-muted/60 px-3 py-2 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 placeholder:text-muted-foreground",
+        "min-h-28 w-full rounded-[var(--vf-radius-sm)] border border-border bg-muted/60 px-3 py-2 text-sm text-foreground outline-none vf-transition focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground",
         className
       )}
       {...props}

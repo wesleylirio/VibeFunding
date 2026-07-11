@@ -11,6 +11,13 @@ import type { GemmaGateway, FounderAssistResponse } from "./types";
 import type { GemmaChatInput, GemmaInsight, GemmaResponse } from "@/lib/types";
 import { nowIso } from "@/lib/db/seed-data";
 import { ensureSeeded } from "@/lib/demo/ensure-seeded";
+import {
+  getInvestedProjectIds,
+  getInvestedProjectSlugs,
+} from "@/lib/queries/portfolio";
+import { listProjects } from "@/lib/queries/projects";
+import { rankProjectMatches } from "@/lib/investor/preferences";
+import { getJurorSession } from "@/lib/demo/juror-session";
 
 function baseInsight(
   partial: Omit<GemmaInsight, "generatedAt" | "provider"> & {
@@ -88,12 +95,23 @@ export class MockGemmaGateway implements GemmaGateway {
         draft: input.message,
       });
       content = assist.content;
+    } else if (
+      input.context === "GLOBAL_DISCOVERY" ||
+      lower.includes("recommend") ||
+      lower.includes("match") ||
+      lower.includes("fit me") ||
+      lower.includes("suggest")
+    ) {
+      content = await discoveryMatchesText();
     } else if (lower.includes("compare")) {
-      content =
-        "Compared with your current holdings, CollabMesh deepens Developer Tools exposure, while AuditForge would diversify into Security. InferLane increases AI Infrastructure compute exposure. All figures are simulated.";
+      const held = [...getInvestedProjectSlugs()];
+      const skip = held.length
+        ? ` You already hold exposure in ${held.join(", ")} — I won't re-pitch those.`
+        : "";
+      content = `Compared with your current holdings, projects outside your stake set diversify better (e.g. Security or AI Infrastructure if you are concentrated in Developer Tools).${skip} All figures are simulated.`;
     } else if (lower.includes("changed") || lower.includes("recent")) {
       content =
-        "Recent activity: CollabMesh published a HASH_VERIFIED Proof of Build for multi-agent presence heartbeats (24/24 tests). InferLane remains open for AMD GPU hours and VIBE. Check Activity and portfolio updates for stakeholder notes.";
+        "Recent activity: new Proofs of Build and open Build Rounds are on Discover. Check Activity for stakeholder notes. I won't re-suggest projects you already funded.";
     } else {
       content = `I'm Gemma, your portfolio copilot on VibeFunding.
 
@@ -101,7 +119,7 @@ Current context: **${input.context.replaceAll("_", " ")}**.
 
 I can help with discovery, due diligence, Build Round analysis, Proof of Build explanations, portfolio concentration, and founder communication drafts.
 
-I never auto-invest or publish founder content without confirmation.
+I never auto-invest, and I won't re-suggest projects you already invested in.
 
 What would you like to examine?`;
     }
@@ -334,6 +352,36 @@ function resolveProject(projectId?: string, projectSlug?: string) {
     return db.select().from(projects).where(eq(projects.slug, projectSlug)).get();
   }
   return null;
+}
+
+async function discoveryMatchesText(): Promise<string> {
+  const held = getInvestedProjectSlugs();
+  const prefs = (await getJurorSession()).investorPreferences;
+  if (!prefs) {
+    return "Complete the preference questions on Discover and I’ll match open Build Rounds. I never re-suggest projects you already invested in.";
+  }
+  const { items } = listProjects({ sort: "TRENDING", limit: 24 });
+  const matches = rankProjectMatches(items, prefs, {
+    excludeSlugs: held,
+    excludeIds: getInvestedProjectIds(),
+  }).slice(0, 3);
+
+  if (matches.length === 0) {
+    return held.size
+      ? `You’ve already invested in ${[...held].join(", ")}. I won’t re-suggest those. Browse other open rounds on Discover or open Portfolio for holdings.`
+      : "I don’t have a strong new match yet — try revising preferences on Discover.";
+  }
+
+  const lines = matches
+    .map(
+      (m, i) =>
+        `${i + 1}. **${m.name}** (/${m.slug}) — ${m.matchReason}`
+    )
+    .join("\n");
+  const heldNote = held.size
+    ? `\n\nSkipped (already invested): ${[...held].join(", ")}.`
+    : "";
+  return `Here are projects I’d look at next (not ones you already funded):\n\n${lines}${heldNote}\n\nInvest with VIBE (50 VIBE = 1 AMD GPU Hour). This is informational only.`;
 }
 
 async function explainBuildRound(input: GemmaChatInput) {

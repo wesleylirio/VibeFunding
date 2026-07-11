@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getGemmaGateway } from "@/lib/gemma";
+import { liveAttribution } from "@/lib/gemma/openai-client";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
@@ -158,12 +159,8 @@ function formatInsightContent(
   return content;
 }
 
-/** Product-safe attribution — never claims live AMD unless true. */
+/** Product-safe attribution from live gateway provider. */
 function attributionFor(provider: string): string | null {
-  if (provider === "AMD_GEMMA") {
-    const model = process.env.GEMMA_MODEL || "Gemma 4";
-    const short = model.includes("gemma") ? "Gemma 4" : "Gemma";
-    return `${short} · AMD Instinct`;
-  }
-  return null;
+  if (provider !== "AMD_GEMMA") return null;
+  return liveAttribution();
 }

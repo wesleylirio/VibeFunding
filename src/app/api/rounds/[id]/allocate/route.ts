@@ -7,14 +7,8 @@ import { INVESTOR_ID } from "@/lib/db/seed-data";
 export const dynamic = "force-dynamic";
 
 const schema = z.object({
-  resourceType: z.enum([
-    "VIBE",
-    "STABLECOIN",
-    "AGENT_TOKENS",
-    "AGENT_HOURS",
-    "AMD_GPU_HOURS",
-    "COMPUTE_UNITS",
-  ]),
+  // Investors contribute VIBE (converted to AMD GPU Cloud Credits).
+  resourceType: z.enum(["VIBE"]).default("VIBE"),
   amount: z.number().positive(),
 });
 
@@ -29,7 +23,7 @@ export async function POST(
     const result = allocateToRound({
       investorId: INVESTOR_ID,
       buildRoundId: id,
-      resourceType: body.resourceType,
+      resourceType: "VIBE",
       amount: body.amount,
     });
     return NextResponse.json({

@@ -1,20 +1,18 @@
 "use client";
 
-import { RoleSwitcher } from "./role-switcher";
-import { DemoResetButton } from "./demo-reset-button";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, LogOut, User } from "lucide-react";
 import { WalletBar } from "@/components/wallet/wallet-bar";
 import { ThemeSelector } from "@/lib/brand/theme";
 import type { DemoRole } from "@/lib/types";
-import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function Header({
-  role,
+  role: _role,
   userName,
   initials,
   title,
-  subtitle,
   vibeBalance,
 }: {
   role: DemoRole;
@@ -24,7 +22,25 @@ export function Header({
   subtitle?: string;
   vibeBalance: number;
 }) {
+  void _role;
   const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
 
   async function logout() {
     await fetch("/api/demo/logout", { method: "POST" });
@@ -37,37 +53,75 @@ export function Header({
       <div className="flex items-center justify-between gap-3 px-4 py-3 md:px-6">
         <div className="min-w-0">
           {title ? (
-            <h1 className="truncate text-lg font-semibold tracking-tight">{title}</h1>
+            <h1 className="truncate font-display text-lg font-semibold tracking-tight">
+              {title}
+            </h1>
           ) : (
-            <h1 className="truncate text-lg font-semibold tracking-tight lg:hidden">
-              VibeFunding
+            <h1 className="truncate font-display text-lg font-semibold tracking-tight lg:hidden">
+              <span className="vf-wordmark-vibe">Vibe</span>
+              <span className="vf-wordmark-funding">Funding</span>
             </h1>
           )}
-          {subtitle ? (
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">{subtitle}</p>
-          ) : null}
         </div>
+
         <div className="flex items-center gap-2">
           <ThemeSelector className="hidden sm:inline-flex" />
-          <WalletBar initialBalance={vibeBalance} userName={userName} initials={initials} />
-          <DemoResetButton />
-          <RoleSwitcher role={role} userName={userName} />
-          <div
-            className="hidden h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-accent sm:flex"
-            title={userName}
-          >
-            {initials}
+          <WalletBar
+            initialBalance={vibeBalance}
+            userName={userName}
+            initials={initials}
+          />
+
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((o) => !o)}
+              className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 py-1 pl-1 pr-2 transition hover:bg-muted"
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-vibe-soft text-xs font-semibold text-vibe">
+                {initials}
+              </span>
+              <span className="hidden max-w-[100px] truncate text-sm font-medium md:inline">
+                {userName}
+              </span>
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 text-muted-foreground transition",
+                  menuOpen && "rotate-180"
+                )}
+              />
+            </button>
+
+            {menuOpen ? (
+              <div
+                role="menu"
+                className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-xl"
+              >
+                <div className="border-b border-border px-3 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <User className="h-3.5 w-3.5 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium">{userName}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Investor
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={logout}
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  Logout
+                </button>
+              </div>
+            ) : null}
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={logout}
-            title="Logout"
-            className="hidden md:inline-flex"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </header>

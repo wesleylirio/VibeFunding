@@ -12,6 +12,42 @@ import {
 import { ensureSeeded } from "@/lib/demo/ensure-seeded";
 import { INVESTOR_ID } from "@/lib/db/seed-data";
 
+/** Project ids the investor already funded (allocations or project holdings). */
+export function getInvestedProjectIds(investorId = INVESTOR_ID): Set<string> {
+  const portfolio = getPortfolio(investorId);
+  const ids = new Set<string>();
+  for (const a of portfolio.allocations) {
+    if (a.projectId) ids.add(a.projectId);
+  }
+  for (const h of portfolio.holdings) {
+    if (
+      h.projectId &&
+      (h.assetType === "PROJECT_TOKEN" || h.assetType === "NFT")
+    ) {
+      ids.add(h.projectId);
+    }
+  }
+  return ids;
+}
+
+/** Project slugs already funded — for Gemma discover filtering. */
+export function getInvestedProjectSlugs(investorId = INVESTOR_ID): Set<string> {
+  const portfolio = getPortfolio(investorId);
+  const slugs = new Set<string>();
+  for (const a of portfolio.allocations) {
+    if (a.project?.slug) slugs.add(a.project.slug);
+  }
+  for (const h of portfolio.holdings) {
+    if (
+      h.project?.slug &&
+      (h.assetType === "PROJECT_TOKEN" || h.assetType === "NFT")
+    ) {
+      slugs.add(h.project.slug);
+    }
+  }
+  return slugs;
+}
+
 export function getPortfolio(investorId = INVESTOR_ID) {
   ensureSeeded();
   const db = getDb();

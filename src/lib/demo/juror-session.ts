@@ -3,6 +3,15 @@ import type { DemoRole } from "@/lib/types";
 
 export const JUROR_COOKIE = "vf_juror";
 
+export type InvestorPreferences = {
+  interests: string[];
+  stage: string;
+  risk: string;
+  resources: string[];
+  priorities: string[];
+  completedAt: string;
+};
+
 export type JurorSession = {
   loggedIn: boolean;
   displayName: string;
@@ -10,6 +19,7 @@ export type JurorSession = {
   role: DemoRole;
   onboardingSeen: boolean;
   founderQuickstartSeen: boolean;
+  investorPreferences?: InvestorPreferences | null;
 };
 
 export function initialsFromName(name: string): string {
@@ -27,6 +37,29 @@ export function defaultJurorSession(): JurorSession {
     role: "INVESTOR",
     onboardingSeen: false,
     founderQuickstartSeen: false,
+    investorPreferences: null,
+  };
+}
+
+function parsePreferences(
+  raw: unknown
+): InvestorPreferences | null {
+  if (!raw || typeof raw !== "object") return null;
+  const p = raw as Partial<InvestorPreferences>;
+  if (!Array.isArray(p.interests) || !p.stage || !p.risk || !p.completedAt) {
+    return null;
+  }
+  return {
+    interests: p.interests.map(String).slice(0, 8),
+    stage: String(p.stage).slice(0, 40),
+    risk: String(p.risk).slice(0, 40),
+    resources: Array.isArray(p.resources)
+      ? p.resources.map(String).slice(0, 8)
+      : [],
+    priorities: Array.isArray(p.priorities)
+      ? p.priorities.map(String).slice(0, 8)
+      : [],
+    completedAt: String(p.completedAt),
   };
 }
 
@@ -43,6 +76,7 @@ export function parseJurorCookie(raw: string | undefined): JurorSession {
       role: data.role === "FOUNDER" ? "FOUNDER" : "INVESTOR",
       onboardingSeen: Boolean(data.onboardingSeen),
       founderQuickstartSeen: Boolean(data.founderQuickstartSeen),
+      investorPreferences: parsePreferences(data.investorPreferences),
     };
   } catch {
     return defaultJurorSession();

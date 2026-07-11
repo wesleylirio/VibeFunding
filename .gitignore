@@ -22,6 +22,7 @@
 .DS_Store
 *.pem
 Thumbs.db
+*.log
 
 # debug
 npm-debug.log*
@@ -29,22 +30,29 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
-.env*.local
+# env files (never commit secrets)
 .env
+.env.*
+!.env.example
 
-# vercel
+# vercel / local deploy
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
-# app data
+# app data (sqlite)
 /data
 *.db
 *.db-shm
 *.db-wal
 
-# docker
+# docker temp
 vibefunding-tmp
+
+# generated demo audio (regenerate with npm run demo:tts)
+/scripts/demo-record/audio/*.mp3
+
+# optional local submission dumps
+/docs/submission/

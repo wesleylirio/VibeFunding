@@ -1,8 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 
 /**
- * Shows live AMD attribution only when provider is genuinely AMD_GEMMA.
- * Fallback/cache/demo responses show no fake live claim.
+ * Live Gemma attribution — honest about provider.
+ * Never claims Fireworks/AMD unless that path was actually used.
  */
 export function GemmaProviderBadge({
   provider,
@@ -11,12 +11,15 @@ export function GemmaProviderBadge({
   provider?: string;
   attribution?: string | null;
 }) {
-  if (provider === "AMD_GEMMA" || attribution) {
+  if (provider === "AMD_GEMMA") {
     return (
       <Badge variant="gemma">
-        {attribution || "Gemma 4 · AMD Instinct"}
+        {attribution || "Gemma Live · Fire"}
       </Badge>
     );
+  }
+  if (provider === "CACHE" || provider === "DEMO" || provider) {
+    return <Badge variant="outline">Gemma</Badge>;
   }
   return null;
 }

@@ -119,14 +119,18 @@ export function WalletBar({
           <span
             key={tick}
             className={cn(
-              "font-semibold tabular-nums text-foreground",
+              "font-display font-semibold tabular-nums text-foreground",
               tick > 0 && "animate-wallet-tick"
             )}
           >
             {display}
             {!hidden ? (
               <span className="ml-1 text-xs font-medium text-vibe">VIBE</span>
-            ) : null}
+            ) : (
+              <span className="ml-1 text-xs font-medium text-muted-foreground">
+                VIBE
+              </span>
+            )}
           </span>
           {userName ? (
             <span className="hidden items-center gap-1 border-l border-border pl-2 text-xs text-muted-foreground xl:inline-flex">
@@ -154,12 +158,12 @@ export function WalletBar({
             aria-label="Close wallet"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 z-50 mt-2 w-80 animate-reveal-up rounded-2xl border border-border bg-card p-3 shadow-xl">
-            <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              VIBE
+          <div className="absolute right-0 z-50 mt-2 w-80 animate-reveal-up rounded-[var(--vf-radius-lg)] border border-border bg-card p-3 shadow-xl">
+            <div className="mb-2 text-xs font-medium tracking-wide text-muted-foreground">
+              Network resource · VIBE
             </div>
-            <div className="mb-3 text-lg font-semibold tabular-nums">
-              {hidden ? "••••••" : formatNumber(balance)}
+            <div className="mb-3 font-display text-lg font-semibold tabular-nums text-vibe">
+              {hidden ? "•••••• VIBE" : `${formatNumber(balance)} VIBE`}
             </div>
 
             <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">

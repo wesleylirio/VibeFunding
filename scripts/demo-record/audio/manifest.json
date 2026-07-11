@@ -1,0 +1,16 @@
+{
+  "voice": "en-US-GuyNeural",
+  "cues": [
+    "01-intro",
+    "02-login",
+    "03-prefs",
+    "04-matches",
+    "05-project",
+    "06-invest",
+    "07-gemma",
+    "08-agents",
+    "09-proof",
+    "10-portfolio",
+    "11-close"
+  ]
+}

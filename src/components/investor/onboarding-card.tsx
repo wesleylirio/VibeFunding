@@ -37,31 +37,30 @@ export function OnboardingCard({
             Welcome, {firstName}
           </div>
           <h2 className="mt-1 text-lg font-semibold tracking-tight">
-            Your first five minutes on VibeFunding
+            How VibeFunding works
           </h2>
           <ol className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
-              <strong className="text-foreground">1. Portfolio briefing</strong> — Gemma
-              summarizes concentration and recent proofs below.
+              <strong className="text-foreground">1. VIBE → AMD GPU</strong> — 50
+              VIBE funds 1 AMD GPU Hour on a Build Round.
             </li>
             <li>
-              <strong className="text-foreground">2. Build Rounds</strong> — projects raise
-              resources for a concrete objective, measured in Build Units.
+              <strong className="text-foreground">2. Gemma recommends</strong> —
+              matches and diligence, not auto-invest.
             </li>
             <li>
-              <strong className="text-foreground">3. Recommended project</strong> — start with{" "}
-              <Link href={`/projects/${recommendedSlug}`} className="text-accent hover:underline">
+              <strong className="text-foreground">3. You allocate</strong> — open{" "}
+              <Link
+                href={`/projects/${recommendedSlug}`}
+                className="text-accent hover:underline"
+              >
                 CollabMesh
-              </Link>
-              .
+              </Link>{" "}
+              and invest VIBE.
             </li>
             <li>
-              <strong className="text-foreground">4. Proof of Build</strong> — see verified
-              agent work after allocation.
-            </li>
-            <li>
-              <strong className="text-foreground">5. Allocate</strong> — contribute VIBE
-              (immediate) or productive capacity (pending verification).
+              <strong className="text-foreground">4. Proof of Build</strong> — see
+              what shipped and track portfolio upside.
             </li>
           </ol>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -69,13 +68,13 @@ export function OnboardingCard({
               href={`/projects/${recommendedSlug}`}
               className="inline-flex h-10 items-center rounded-xl bg-accent px-4 text-sm font-medium text-white"
             >
-              Open recommended project
+              Open CollabMesh
             </Link>
             <Link
               href="/proofs/proof-collabmesh-1"
               className="inline-flex h-10 items-center rounded-xl border border-border px-4 text-sm font-medium"
             >
-              View a Proof of Build
+              View Proof of Build
             </Link>
             <Button type="button" variant="ghost" onClick={finish}>
               Dismiss

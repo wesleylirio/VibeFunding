@@ -84,24 +84,23 @@ export function generateQuickstartDraft(input: QuickstartInput): QuickstartDraft
   ];
 
   const vibeTarget = 8000;
-  const gpuHours = 40;
-  const agentHours = 60;
-  const estimatedBuildUnits = vibeTarget + gpuHours * 50 + agentHours * 100;
+  const gpuHours = vibeTarget / 50; // 50 VIBE = 1 AMD GPU Hour
+  const estimatedBuildUnits = vibeTarget;
 
   return {
     name,
     slug,
     pitch,
-    description: `${base}\n\nCurrent stage: ${stage}. Evidence on hand: ${input.evidence || "Early execution signals"}.\n\nThis Build Round funds the next concrete delivery using capital, agent hours and compute — tracked through Agent Runs and Proof of Build.`,
+    description: `${base}\n\nCurrent stage: ${stage}. Evidence on hand: ${input.evidence || "Early execution signals"}.\n\nThis Build Round is funded with VIBE, converted to AMD GPU Cloud Credits for agent execution — tracked through Agent Runs and Proof of Build.`,
     problem:
-      "Builders with strong execution signals lack a transparent market to raise productive AI capacity without losing control of the roadmap.",
+      "Builders with strong execution signals lack a transparent market to raise AMD GPU-backed compute without losing control of the roadmap.",
     solution:
-      "Open a Build Round that accepts VIBE and productive contributions, execute with coding agents, and publish Proof of Build for holders.",
+      "Open a Build Round funded with VIBE (converted to AMD GPU Cloud Credits), execute with coding agents, and publish Proof of Build for holders.",
     audience:
-      "Investors, compute providers, and early product users who want exposure tied to verified progress.",
+      "Investors and early product users who want exposure tied to verified, GPU-backed progress.",
     stage,
     branding: {
-      primary: "#3b6ef5",
+      primary: "#20d9c2",
       secondary: "#22d3ee",
       pattern: "nodes",
     },
@@ -117,20 +116,14 @@ export function generateQuickstartDraft(input: QuickstartInput): QuickstartDraft
       resources: [
         {
           type: "VIBE",
-          label: "VIBE capital",
+          label: "VIBE (→ AMD GPU Cloud Credits)",
           amount: vibeTarget,
           unit: "VIBE",
         },
         {
           type: "AMD_GPU_HOURS",
-          label: "AMD GPU hours",
+          label: "AMD GPU Hours (from VIBE)",
           amount: gpuHours,
-          unit: "hours",
-        },
-        {
-          type: "AGENT_HOURS",
-          label: "Agent hours",
-          amount: agentHours,
           unit: "hours",
         },
       ],
@@ -158,8 +151,8 @@ export function generateQuickstartDraft(input: QuickstartInput): QuickstartDraft
       name: `${name} Builder Pass`,
       utility: ["Early product access", "Community badge", "Update priority"],
     },
-    investorSummary: `${name} is raising productive resources to ${objective}. Contributors receive ${symbol} based on Build Units. Liquid capital settles immediately; productive capacity settles after verification.`,
-    onePaper: `# ${name} One-Paper\n\n## Pitch\n${pitch}\n\n## Problem\nBuilders need productive capital with transparent conversion into work.\n\n## Solution\n${base}\n\n## Stage\n${stage}\n\n## Build Round\n${objective}\n\n## Resources\nVIBE, AMD GPU hours, agent hours → Build Units\n\n## Returns\n${symbol} Project Tokens + access NFT\n\n## Evidence\n${input.evidence || "To be expanded"}\n`,
+    investorSummary: `${name} is raising VIBE to fund AMD GPU Cloud Credits for ${objective}. Contributors receive ${symbol} based on Build Units. 50 VIBE = 1 AMD GPU Hour.`,
+    onePaper: `# ${name} One-Paper\n\n## Pitch\n${pitch}\n\n## Problem\nBuilders need transparent VIBE → AMD GPU compute funding.\n\n## Solution\n${base}\n\n## Stage\n${stage}\n\n## Build Round\n${objective}\n\n## Resources\nVIBE → AMD GPU Cloud Credits (50 VIBE = 1 AMD GPU Hour)\n\n## Returns\n${symbol} Project Tokens + access NFT\n\n## Evidence\n${input.evidence || "To be expanded"}\n`,
   };
 }
 

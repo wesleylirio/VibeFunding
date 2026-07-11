@@ -10,6 +10,8 @@ import { listProjects } from "@/lib/queries/projects";
 import { Markdown } from "@/components/ui/markdown";
 import { formatNumber } from "@/lib/utils";
 import { GemmaOrb } from "@/components/gemma/gemma-orb";
+import { GemmaProviderBadge } from "@/components/gemma/provider-badge";
+import { liveAttribution } from "@/lib/gemma/openai-client";
 
 export const dynamic = "force-dynamic";
 
@@ -31,25 +33,35 @@ export default async function GemmaPage() {
       userName={juror.displayName}
       initials={juror.initials}
       title="Gemma"
-      subtitle="Portfolio intelligence center"
       vibeBalance={portfolio.vibeBalance}
       hideGemma
     >
       <div className="mx-auto max-w-5xl space-y-6">
         <section className="card-surface card-glow p-6 md:p-8">
-          <div className="flex items-center gap-3">
-            <GemmaOrb size={48} state="reporting" />
-            <div>
-              <div className="text-xs font-medium uppercase tracking-[0.16em] text-gemma">
-                Your briefing
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <GemmaOrb size={48} state="reporting" />
+              <div>
+                <div className="text-xs font-medium tracking-[0.14em] text-gemma">
+                  Portfolio intelligence
+                </div>
+                <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight md:text-3xl">
+                  Hello {firstName} — here is what matters
+                </h1>
               </div>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
-                Hello {firstName} — here is what matters
-              </h1>
             </div>
+            <GemmaProviderBadge
+              provider={briefing.provider}
+              attribution={
+                briefing.provider === "AMD_GEMMA"
+                  ? liveAttribution()
+                  : null
+              }
+            />
           </div>
           <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-            Personalized portfolio events, matches, and reports. Gemma never auto-invests.
+            Personalized briefings, matches, and reports from Gemma. Advice only —
+            Gemma never auto-invests.
           </p>
         </section>
 

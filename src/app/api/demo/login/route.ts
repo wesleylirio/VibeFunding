@@ -22,13 +22,15 @@ export async function POST(request: Request) {
     // Explicitly discard password — never persist
     void body.password;
 
-    switchDemoRole(body.role);
+    // Product surface is Investor-first; Founder Mode is not open yet.
+    const role = "INVESTOR" as const;
+    switchDemoRole(role);
 
     const session = {
       loggedIn: true,
       displayName: body.displayName.trim(),
       initials: initialsFromName(body.displayName),
-      role: body.role,
+      role,
       onboardingSeen: false,
       founderQuickstartSeen: false,
     };

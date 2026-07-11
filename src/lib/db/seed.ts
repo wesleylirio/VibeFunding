@@ -301,6 +301,8 @@ export function seedDatabase(options?: { force?: boolean }) {
     )
     .run();
 
+  // MVP: investors fund with VIBE only; AMD GPU Hours track converted compute.
+  // 50 VIBE = 1 AMD GPU Hour.
   const resources = [
     {
       id: "res-cm-vibe",
@@ -309,25 +311,16 @@ export function seedDatabase(options?: { force?: boolean }) {
       targetAmount: 15000,
       fundedAmount: 10200,
       unit: "VIBE",
-      label: "VIBE capital",
+      label: "VIBE (→ AMD GPU credits)",
     },
     {
       id: "res-cm-gpu",
       buildRoundId: "round-collabmesh-presence",
       type: "AMD_GPU_HOURS" as const,
-      targetAmount: 80,
-      fundedAmount: 42,
+      targetAmount: 300, // 15000 / 50
+      fundedAmount: 204, // 10200 / 50
       unit: "hours",
-      label: "AMD GPU hours",
-    },
-    {
-      id: "res-cm-agent",
-      buildRoundId: "round-collabmesh-presence",
-      type: "AGENT_HOURS" as const,
-      targetAmount: 120,
-      fundedAmount: 68,
-      unit: "hours",
-      label: "Coding agent hours",
+      label: "AMD GPU Hours (from VIBE)",
     },
     {
       id: "res-il-vibe",
@@ -336,16 +329,16 @@ export function seedDatabase(options?: { force?: boolean }) {
       targetAmount: 10000,
       fundedAmount: 4000,
       unit: "VIBE",
-      label: "VIBE capital",
+      label: "VIBE (→ AMD GPU credits)",
     },
     {
       id: "res-il-gpu",
       buildRoundId: "round-inferlane-batch",
       type: "AMD_GPU_HOURS" as const,
-      targetAmount: 100,
-      fundedAmount: 28,
+      targetAmount: 200,
+      fundedAmount: 80,
       unit: "hours",
-      label: "AMD GPU hours",
+      label: "AMD GPU Hours (from VIBE)",
     },
     {
       id: "res-af-vibe",
@@ -354,16 +347,16 @@ export function seedDatabase(options?: { force?: boolean }) {
       targetAmount: 7000,
       fundedAmount: 2100,
       unit: "VIBE",
-      label: "VIBE capital",
+      label: "VIBE (→ AMD GPU credits)",
     },
     {
-      id: "res-af-tokens",
+      id: "res-af-gpu",
       buildRoundId: "round-auditforge-packs",
-      type: "AGENT_TOKENS" as const,
-      targetAmount: 5_000_000,
-      fundedAmount: 1_200_000,
-      unit: "tokens",
-      label: "Agentic credits",
+      type: "AMD_GPU_HOURS" as const,
+      targetAmount: 140,
+      fundedAmount: 42,
+      unit: "hours",
+      label: "AMD GPU Hours (from VIBE)",
     },
   ];
 
@@ -375,7 +368,16 @@ export function seedDatabase(options?: { force?: boolean }) {
       targetAmount: r.targetValue,
       fundedAmount: r.fundedValue,
       unit: "VIBE",
-      label: "VIBE capital",
+      label: "VIBE (→ AMD GPU credits)",
+    });
+    resources.push({
+      id: `res-${r.id}-gpu`,
+      buildRoundId: r.id,
+      type: "AMD_GPU_HOURS" as const,
+      targetAmount: Math.round(r.targetValue / 50),
+      fundedAmount: Math.round(r.fundedValue / 50),
+      unit: "hours",
+      label: "AMD GPU Hours (from VIBE)",
     });
   }
 
@@ -942,29 +944,142 @@ export function seedDatabase(options?: { force?: boolean }) {
     })
     .run();
 
-  // Community feed for detailed projects
-  db.insert(communityPosts)
-    .values([
+  // Community feed — every project starts with team + community activity
+  const { posts: communityPostRows, comments: communityCommentRows } =
+    buildCommunitySeed();
+  db.insert(communityPosts).values(communityPostRows).run();
+  db.insert(communityComments).values(communityCommentRows).run();
+
+  return { seeded: true as const };
+}
+
+type SeedAuthorRole =
+  | "FOUNDER"
+  | "TEAM"
+  | "INVESTOR"
+  | "COMPUTE_PROVIDER"
+  | "TOKEN_HOLDER";
+
+function buildCommunitySeed() {
+  type Post = {
+    id: string;
+    projectId: string;
+    authorName: string;
+    authorRole: SeedAuthorRole;
+    body: string;
+    buildRoundId: string | null;
+    proofId: string | null;
+    agentRunId: string | null;
+    likes: number;
+    dislikes: number;
+    createdAt: string;
+  };
+  type Comment = {
+    id: string;
+    postId: string;
+    authorName: string;
+    authorRole: SeedAuthorRole;
+    body: string;
+    createdAt: string;
+  };
+
+  const posts: Post[] = [];
+  const comments: Comment[] = [];
+
+  const detailedExtras: Record<
+    string,
+    {
+      founder: string;
+      team: string;
+      roundId: string;
+      proofId?: string;
+      runId?: string;
+      symbol: string;
+      teamUpdate: string;
+      founderUpdate: string;
+    }
+  > = {
+    "proj-collabmesh": {
+      founder: "Maya Chen",
+      team: "Priya Nair",
+      roundId: "round-collabmesh-presence",
+      proofId: "proof-collabmesh-1",
+      runId: "run-collabmesh-presence-1",
+      symbol: "MESH",
+      teamUpdate:
+        "Conflict-suite agents finished a green run overnight. Diff review is open for anyone who wants to walk the replay.",
+      founderUpdate:
+        "Presence heartbeats shipped with full tests. Proof of Build is live for MESH holders — feedback welcome on the multi-agent room UX.",
+    },
+    "proj-inferlane": {
+      founder: "Sam Okonkwo",
+      team: "Lina Park",
+      roundId: "round-inferlane-batch",
+      proofId: "proof-inferlane-1",
+      runId: "run-inferlane-batch-1",
+      symbol: "LANE",
+      teamUpdate:
+        "ROCm batch worker scaffold is in. Routing evals improved p95 latency on the open-weight path.",
+      founderUpdate:
+        "Thanks to supporters funding AMD GPU Cloud Credits with VIBE — batch workers are next on the critical path.",
+    },
+    "proj-auditforge": {
+      founder: "Elena Voss",
+      team: "Chris Delgado",
+      roundId: "round-auditforge-packs",
+      symbol: "AFG",
+      teamUpdate:
+        "New policy packs for secret scanning are staged. Security reviewers welcome in the thread.",
+      founderUpdate:
+        "Build Round is open for VIBE contributions. Every contribution funds AMD GPU time for agent PR review.",
+    },
+  };
+
+  // Hero / detailed projects — richer threads
+  for (const p of DETAILED_PROJECTS) {
+    const extra = detailedExtras[p.id];
+    if (!extra) continue;
+    const slug = p.slug;
+
+    const founderPostId = `cpost-${slug}-founder`;
+    const teamPostId = `cpost-${slug}-team`;
+    const investorPostId = `cpost-${slug}-investor`;
+    const holderPostId = `cpost-${slug}-holder`;
+
+    posts.push(
       {
-        id: "cpost-cm-1",
-        projectId: "proj-collabmesh",
-        authorName: "Maya Chen",
+        id: founderPostId,
+        projectId: p.id,
+        authorName: extra.founder,
         authorRole: "FOUNDER",
-        body: "Presence heartbeats shipped with full tests. Proof of Build is live for MESH holders — feedback welcome on the multi-agent room UX.",
-        buildRoundId: "round-collabmesh-presence",
-        proofId: "proof-collabmesh-1",
-        agentRunId: "run-collabmesh-presence-1",
-        likes: 12,
+        body: extra.founderUpdate,
+        buildRoundId: extra.roundId,
+        proofId: extra.proofId ?? null,
+        agentRunId: extra.runId ?? null,
+        likes: 10 + Math.floor(p.trendingScore / 20),
+        dislikes: 0,
+        createdAt: daysAgo(3),
+      },
+      {
+        id: teamPostId,
+        projectId: p.id,
+        authorName: extra.team,
+        authorRole: "TEAM",
+        body: extra.teamUpdate,
+        buildRoundId: extra.roundId,
+        proofId: null,
+        agentRunId: extra.runId ?? null,
+        likes: 6,
         dislikes: 0,
         createdAt: daysAgo(2),
       },
       {
-        id: "cpost-cm-2",
-        projectId: "proj-collabmesh",
+        id: investorPostId,
+        projectId: p.id,
         authorName: "Alex Rivera",
         authorRole: "INVESTOR",
-        body: "Allocated VIBE into the multiplayer round. Watching agent replay now — the path from capital to verified work is clear.",
-        buildRoundId: "round-collabmesh-presence",
+        body: `Invested VIBE into the current Build Round (50 VIBE = 1 AMD GPU Hour). Watching how ${p.name} turns compute into verified work.`,
+        buildRoundId: extra.roundId,
         proofId: null,
         agentRunId: null,
         likes: 5,
@@ -972,69 +1087,143 @@ export function seedDatabase(options?: { force?: boolean }) {
         createdAt: daysAgo(1),
       },
       {
-        id: "cpost-cm-3",
-        projectId: "proj-collabmesh",
-        authorName: "Nova GPU Co-op",
-        authorRole: "COMPUTE_PROVIDER",
-        body: "Pledging AMD GPU hours for the next conflict-suite sprint. Looking forward to verified contribution settlement.",
-        buildRoundId: "round-collabmesh-presence",
-        proofId: null,
-        agentRunId: null,
-        likes: 8,
-        dislikes: 1,
-        createdAt: daysAgo(1),
-      },
-      {
-        id: "cpost-il-1",
-        projectId: "proj-inferlane",
-        authorName: "Maya Chen",
-        authorRole: "TEAM",
-        body: "ROCm batch worker scaffold is in — open round still needs GPU hours and VIBE to hit target.",
-        buildRoundId: "round-inferlane-batch",
-        proofId: "proof-inferlane-1",
-        agentRunId: "run-inferlane-batch-1",
-        likes: 4,
-        dislikes: 0,
-        createdAt: daysAgo(4),
-      },
-      {
-        id: "cpost-af-1",
-        projectId: "proj-auditforge",
-        authorName: "Maya Chen",
-        authorRole: "FOUNDER",
-        body: "Policy pack expansion is live for allocation. Security reviewers and agentic credit contributors welcome.",
-        buildRoundId: "round-auditforge-packs",
-        proofId: null,
-        agentRunId: null,
-        likes: 3,
-        dislikes: 0,
-        createdAt: daysAgo(3),
-      },
-    ])
-    .run();
-
-  db.insert(communityComments)
-    .values([
-      {
-        id: "ccom-1",
-        postId: "cpost-cm-1",
+        id: holderPostId,
+        projectId: p.id,
         authorName: "Jordan Lee",
         authorRole: "TOKEN_HOLDER",
-        body: "Great transparency on the proof hashes — holding MESH with more confidence.",
+        body: `Holding ${extra.symbol} — the Proof of Build trail makes it easier to stay close to what shipped.`,
+        buildRoundId: extra.roundId,
+        proofId: extra.proofId ?? null,
+        agentRunId: null,
+        likes: 4,
+        dislikes: 0,
+        createdAt: daysAgo(1),
+      }
+    );
+
+    comments.push(
+      {
+        id: `ccom-${slug}-1`,
+        postId: founderPostId,
+        authorName: "Jordan Lee",
+        authorRole: "TOKEN_HOLDER",
+        body: `Love the transparency — ${extra.symbol} holders get a real signal, not just a newsletter.`,
         createdAt: daysAgo(2),
       },
       {
-        id: "ccom-2",
-        postId: "cpost-cm-2",
-        authorName: "Maya Chen",
+        id: `ccom-${slug}-2`,
+        postId: teamPostId,
+        authorName: extra.founder,
         authorRole: "FOUNDER",
-        body: "Appreciate the allocation — join the agent workspace if you want founder-level timeline context.",
-        createdAt: daysAgo(1),
+        body: "Team is on it — drop questions here and we will answer after the next agent pass.",
+        createdAt: daysAgo(2),
       },
-    ])
-    .run();
+      {
+        id: `ccom-${slug}-3`,
+        postId: investorPostId,
+        authorName: extra.team,
+        authorRole: "TEAM",
+        body: "Appreciate the support. Agent replay is open if you want to see the compute land on tasks.",
+        createdAt: daysAgo(1),
+      }
+    );
+  }
 
-  return { seeded: true as const };
+  // Catalog / summary projects — still a living community feed
+  const teamLeads = [
+    "Riley Cho",
+    "Amara Singh",
+    "Theo Brandt",
+    "Noa Klein",
+    "Ivy Morales",
+    "Kenji Sato",
+    "Sofia Alves",
+    "Omar Haddad",
+    "Nina Volkov",
+  ];
+  const communityNames = [
+    "Casey Brooks",
+    "Drew Patel",
+    "Morgan Ellis",
+    "Samir Khan",
+    "Harper Quinn",
+  ];
+
+  SUMMARY_PROJECTS.forEach((p, i) => {
+    const roundId = `round-${p.slug}-open`;
+    const founderName = teamLeads[i % teamLeads.length];
+    const teamName = teamLeads[(i + 3) % teamLeads.length];
+    const communityName = communityNames[i % communityNames.length];
+    const founderPostId = `cpost-${p.slug}-founder`;
+    const teamPostId = `cpost-${p.slug}-team`;
+    const communityPostId = `cpost-${p.slug}-community`;
+
+    posts.push(
+      {
+        id: founderPostId,
+        projectId: p.id,
+        authorName: founderName,
+        authorRole: "FOUNDER",
+        body: `Welcome to the ${p.name} community. We are shipping ${p.shortDescription.toLowerCase()} — this thread is for Build Round updates, agent progress, and Proof of Build notes.`,
+        buildRoundId: roundId,
+        proofId: null,
+        agentRunId: null,
+        likes: 3 + (i % 5),
+        dislikes: 0,
+        createdAt: daysAgo(5 + (i % 3)),
+      },
+      {
+        id: teamPostId,
+        projectId: p.id,
+        authorName: teamName,
+        authorRole: "TEAM",
+        body: `Team update: active Build Round is open for VIBE. Contributions convert to AMD GPU Cloud Credits (50 VIBE = 1 AMD GPU Hour) so agents can keep moving on ${p.category.toLowerCase()} work.`,
+        buildRoundId: roundId,
+        proofId: null,
+        agentRunId: null,
+        likes: 2 + (i % 4),
+        dislikes: 0,
+        createdAt: daysAgo(3 + (i % 2)),
+      },
+      {
+        id: communityPostId,
+        projectId: p.id,
+        authorName: communityName,
+        authorRole: i % 2 === 0 ? "INVESTOR" : "TOKEN_HOLDER",
+        body:
+          i % 2 === 0
+            ? `Following ${p.name} closely. The VIBE → AMD GPU path makes it obvious how support becomes compute.`
+            : `Glad ${p.tokenSymbol} holders get a community space tied to real Build Round progress.`,
+        buildRoundId: roundId,
+        proofId: null,
+        agentRunId: null,
+        likes: 1 + (i % 3),
+        dislikes: 0,
+        createdAt: daysAgo(1 + (i % 2)),
+      }
+    );
+
+    comments.push(
+      {
+        id: `ccom-${p.slug}-1`,
+        postId: founderPostId,
+        authorName: communityName,
+        authorRole: "INVESTOR",
+        body: "Excited to be here — looking forward to the next verified milestone.",
+        createdAt: daysAgo(4),
+      },
+      {
+        id: `ccom-${p.slug}-2`,
+        postId: teamPostId,
+        authorName: founderName,
+        authorRole: "FOUNDER",
+        body: "We will post Proof of Build links here as soon as the next agent run seals.",
+        createdAt: daysAgo(2),
+      }
+    );
+  });
+
+  return { posts, comments };
 }
 
 export function resetDemo() {

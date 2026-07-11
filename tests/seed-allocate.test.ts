@@ -7,6 +7,7 @@ const testDb = path.join(process.cwd(), "data", "test-app.db");
 describe("seed and allocate", () => {
   let allocateToRound: typeof import("../src/lib/portfolio/allocate").allocateToRound;
   let getPortfolio: typeof import("../src/lib/queries/portfolio").getPortfolio;
+  let getProofById: typeof import("../src/lib/queries/proofs").getProofById;
   let seedDatabase: typeof import("../src/lib/db/seed").seedDatabase;
   let resetDemo: typeof import("../src/lib/db/seed").resetDemo;
   let INVESTOR_ID: string;
@@ -22,12 +23,14 @@ describe("seed and allocate", () => {
     const seedMod = await import("../src/lib/db/seed");
     const allocateMod = await import("../src/lib/portfolio/allocate");
     const portfolioMod = await import("../src/lib/queries/portfolio");
+    const proofsMod = await import("../src/lib/queries/proofs");
     const ids = await import("../src/lib/db/seed-data");
 
     seedDatabase = seedMod.seedDatabase;
     resetDemo = seedMod.resetDemo;
     allocateToRound = allocateMod.allocateToRound;
     getPortfolio = portfolioMod.getPortfolio;
+    getProofById = proofsMod.getProofById;
     INVESTOR_ID = ids.INVESTOR_ID;
 
     seedDatabase({ force: true });
@@ -66,6 +69,21 @@ describe("seed and allocate", () => {
     const after = getPortfolio(INVESTOR_ID);
     expect(after.vibeBalance).toBe(before.vibeBalance - 500);
     expect(after.allocations.length).toBeGreaterThan(before.allocations.length);
+  });
+
+  it("creates a real first Proof for a project that has none", () => {
+    const result = allocateToRound({
+      investorId: INVESTOR_ID,
+      buildRoundId: "round-auditforge-packs",
+      resourceType: "VIBE",
+      amount: 500,
+    });
+
+    expect(result.proofId).toMatch(/^proof-/);
+    const proof = getProofById(result.proofId);
+    expect(proof?.project.slug).toBe("auditforge");
+    expect(proof?.run?.status).toBe("COMPLETED");
+    expect(proof?.artifacts.length).toBeGreaterThan(0);
   });
 
   it("reset restores demo state", () => {

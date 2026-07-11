@@ -11,8 +11,11 @@ export function AllocateButton({
   roundTitle,
   tokenSymbol,
   vibeBalance,
-  label = "Allocate resources",
+  label = "Invest with VIBE",
   variant = "accent" as const,
+  deliverables = [],
+  objective,
+  primaryProofId,
 }: {
   buildRoundId: string;
   projectId: string;
@@ -22,6 +25,9 @@ export function AllocateButton({
   vibeBalance: number;
   label?: string;
   variant?: "primary" | "secondary" | "accent" | "gemma";
+  deliverables?: string[];
+  objective?: string;
+  primaryProofId?: string | null;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -39,6 +45,9 @@ export function AllocateButton({
         roundTitle={roundTitle}
         tokenSymbol={tokenSymbol}
         vibeBalance={vibeBalance}
+        deliverables={deliverables}
+        objective={objective}
+        primaryProofId={primaryProofId}
       />
     </>
   );

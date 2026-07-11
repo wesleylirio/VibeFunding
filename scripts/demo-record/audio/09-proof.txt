@@ -1,0 +1,1 @@
+Proof of Build shows what was funded, completed, and verified: files, tests, and hashes, with technical detail available on demand.

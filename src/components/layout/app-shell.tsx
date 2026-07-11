@@ -6,6 +6,7 @@ import { MobileNav } from "./mobile-nav";
 import { Header } from "./header";
 import { FloatingGemma } from "@/components/gemma/floating-gemma";
 import type { DemoRole } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export function AppShell({
   role,
@@ -29,9 +30,15 @@ export function AppShell({
   const [gemmaOpen, setGemmaOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <div className="flex h-dvh overflow-hidden bg-background text-foreground">
       <Sidebar role={role} />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col transition-[margin] duration-200",
+          /* Desktop Gemma panel reserves space so content stays visible */
+          gemmaOpen && !hideGemma && "md:mr-[400px]"
+        )}
+      >
         <Header
           role={role}
           userName={userName}
@@ -40,8 +47,11 @@ export function AppShell({
           subtitle={subtitle}
           vibeBalance={vibeBalance}
         />
-        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-5 pb-28 md:px-6 md:pb-10">
-          {children}
+        {/* Only main content scrolls — sidebar stays fixed */}
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-5 pb-28 md:px-6 md:pb-10">
+          <div className="mx-auto w-full max-w-[var(--vf-content-max)]">
+            {children}
+          </div>
         </main>
       </div>
       <MobileNav role={role} />

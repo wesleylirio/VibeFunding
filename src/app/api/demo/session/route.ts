@@ -4,6 +4,7 @@ import {
   JUROR_COOKIE,
   getJurorSession,
   serializeJurorSession,
+  type InvestorPreferences,
 } from "@/lib/demo/juror-session";
 import { switchDemoRole } from "@/lib/demo/session";
 
@@ -14,10 +15,19 @@ export async function GET() {
   return NextResponse.json(session);
 }
 
+const prefsSchema = z.object({
+  interests: z.array(z.string()).min(1).max(8),
+  stage: z.string().min(1).max(40),
+  risk: z.string().min(1).max(40),
+  resources: z.array(z.string()).max(8),
+  priorities: z.array(z.string()).max(8),
+});
+
 const patchSchema = z.object({
   role: z.enum(["INVESTOR", "FOUNDER"]).optional(),
   onboardingSeen: z.boolean().optional(),
   founderQuickstartSeen: z.boolean().optional(),
+  investorPreferences: prefsSchema.nullable().optional(),
 });
 
 export async function PATCH(request: Request) {
@@ -37,6 +47,15 @@ export async function PATCH(request: Request) {
     }
     if (typeof body.founderQuickstartSeen === "boolean") {
       current.founderQuickstartSeen = body.founderQuickstartSeen;
+    }
+    if (body.investorPreferences === null) {
+      current.investorPreferences = null;
+    } else if (body.investorPreferences) {
+      const prefs: InvestorPreferences = {
+        ...body.investorPreferences,
+        completedAt: new Date().toISOString(),
+      };
+      current.investorPreferences = prefs;
     }
 
     const res = NextResponse.json({ ok: true, session: current });

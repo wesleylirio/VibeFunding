@@ -22,13 +22,19 @@ export async function GET() {
   return NextResponse.json({
     configured: health.configured,
     reachable: health.reachable,
+    rateLimited: health.rateLimited ?? false,
+    // UI "live" if keys exist and we can attempt (incl. free-tier 429)
+    live: Boolean(
+      health.configured && (health.reachable || health.rateLimited)
+    ),
     provider: health.provider,
+    backend: health.backend,
     mode: runtime.mode,
     model: health.model || cfg.model,
     latencyMs: health.latencyMs,
     lastCheckedAt: health.lastCheckedAt,
     willAttemptLive: runtime.willAttemptLive,
-    // never expose base URL host fully if it contains credentials; only whether set
+    attribution: health.attribution,
     endpointConfigured: Boolean(cfg.baseUrl),
     error: safeError,
   });

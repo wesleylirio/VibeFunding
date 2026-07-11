@@ -3,13 +3,16 @@ import { cn } from "@/lib/utils";
 const variants: Record<string, string> = {
   default: "bg-muted text-foreground",
   accent: "bg-accent-soft text-accent",
+  primary: "bg-vibe-soft text-vibe",
   success: "bg-[var(--success-soft)] text-success",
   warning: "bg-[var(--warning-soft)] text-warning",
   danger: "bg-[var(--danger-soft)] text-danger",
   gemma: "bg-gemma-soft text-gemma",
+  compute: "bg-[var(--compute-soft)] text-compute",
+  teal: "bg-teal-soft text-teal",
   outline: "bg-transparent border border-border text-muted-foreground",
-  vibe: "bg-sky-500/10 text-vibe border border-sky-500/20",
-  pending: "bg-amber-500/10 text-warning border border-amber-500/20",
+  vibe: "bg-vibe-soft text-vibe border border-[color-mix(in_oklab,var(--vibe)_25%,transparent)]",
+  pending: "bg-[var(--warning-soft)] text-warning border border-[color-mix(in_oklab,var(--warning)_25%,transparent)]",
 };
 
 export function Badge({

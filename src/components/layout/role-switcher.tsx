@@ -34,7 +34,7 @@ export function RoleSwitcher({
         });
       }
       startTransition(() => {
-        router.push(next === "FOUNDER" ? "/founder" : "/portfolio");
+        router.push(next === "FOUNDER" ? "/founder" : "/discover");
         router.refresh();
       });
     } catch {
@@ -45,7 +45,7 @@ export function RoleSwitcher({
   return (
     <div className="flex items-center gap-2">
       <div className="hidden text-right xl:block">
-        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        <div className="text-[10px] tracking-wide text-muted-foreground">
           Viewing as
         </div>
         <div className="max-w-[120px] truncate text-xs font-medium">{userName}</div>
@@ -60,7 +60,7 @@ export function RoleSwitcher({
             className={cn(
               "rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition sm:px-3",
               role === r
-                ? "bg-card text-foreground shadow-sm"
+                ? "bg-primary/15 text-primary shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >

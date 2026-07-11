@@ -20,15 +20,101 @@ export type OpenAIClientConfig = {
   model: string;
   timeoutMs: number;
   maxOutputTokens: number;
+  /** openrouter | fireworks | amd_cloud | custom */
+  backend: "openrouter" | "fireworks" | "amd_cloud" | "custom";
 };
 
+export const OPENROUTER_DEFAULT_BASE = "https://openrouter.ai/api/v1";
+/** Free Gemma 4 31B on OpenRouter (good for always-on public demos). */
+export const OPENROUTER_GEMMA_FREE = "google/gemma-4-31b-it:free";
+
+export const FIREWORKS_DEFAULT_BASE =
+  "https://api.fireworks.ai/inference/v1";
+export const FIREWORKS_GEMMA_BASE_MODEL =
+  "accounts/fireworks/models/gemma-4-31b-it";
+export const FIREWORKS_GEMMA_MODEL = FIREWORKS_GEMMA_BASE_MODEL;
+
+/**
+ * Resolve live Gemma endpoint.
+ *
+ * Hackathon primary path: Fireworks (Gemma 4 on AMD-backed infra).
+ * Fallback for always-on public URL when Fireworks credits/deploy are gone:
+ * OpenRouter free Gemma — same product code path (OpenAI-compatible chat).
+ */
 export function getAmdConfigFromEnv(): OpenAIClientConfig {
+  const openrouterKey = (process.env.OPENROUTER_API_KEY || "").trim();
+  const fireworksKey = (process.env.FIREWORKS_API_KEY || "").trim();
+  const gemmaKey = (process.env.GEMMA_API_KEY || "").trim();
+  const gemmaBase = (process.env.GEMMA_BASE_URL || "").replace(/\/$/, "").trim();
+
+  const openrouterBase = (
+    process.env.OPENROUTER_BASE_URL || OPENROUTER_DEFAULT_BASE
+  )
+    .replace(/\/$/, "")
+    .trim();
+  const openrouterModel =
+    process.env.OPENROUTER_MODEL || OPENROUTER_GEMMA_FREE;
+
+  const fireworksBase = (
+    process.env.FIREWORKS_BASE_URL || FIREWORKS_DEFAULT_BASE
+  )
+    .replace(/\/$/, "")
+    .trim();
+  const fireworksModel =
+    process.env.FIREWORKS_MODEL ||
+    process.env.GEMMA_MODEL ||
+    FIREWORKS_GEMMA_MODEL;
+
+  // 1) Fireworks first — intended hackathon path (Gemma on AMD via Fireworks)
+  if (fireworksKey) {
+    return {
+      baseUrl: fireworksBase,
+      apiKey: fireworksKey,
+      model: fireworksModel,
+      timeoutMs: Number(process.env.GEMMA_TIMEOUT_MS || 45000),
+      maxOutputTokens: Number(process.env.GEMMA_MAX_OUTPUT_TOKENS || 2048),
+      backend: "fireworks",
+    };
+  }
+
+  // 2) OpenRouter free Gemma — online demo only when Fireworks credits/deploy unavailable
+  if (openrouterKey) {
+    return {
+      baseUrl: openrouterBase,
+      apiKey: openrouterKey,
+      model: openrouterModel,
+      timeoutMs: Number(process.env.GEMMA_TIMEOUT_MS || 60000),
+      maxOutputTokens: Number(process.env.GEMMA_MAX_OUTPUT_TOKENS || 2048),
+      backend: "openrouter",
+    };
+  }
+
+  // 3) Generic OpenAI-compatible (optional)
+  if (gemmaBase && gemmaKey) {
+    const backend: OpenAIClientConfig["backend"] = gemmaBase.includes(
+      "openrouter"
+    )
+      ? "openrouter"
+      : gemmaBase.includes("fireworks")
+        ? "fireworks"
+        : "amd_cloud";
+    return {
+      baseUrl: gemmaBase,
+      apiKey: gemmaKey,
+      model: process.env.GEMMA_MODEL || fireworksModel,
+      timeoutMs: Number(process.env.GEMMA_TIMEOUT_MS || 30000),
+      maxOutputTokens: Number(process.env.GEMMA_MAX_OUTPUT_TOKENS || 2048),
+      backend,
+    };
+  }
+
   return {
-    baseUrl: (process.env.GEMMA_BASE_URL || "").replace(/\/$/, ""),
-    apiKey: process.env.GEMMA_API_KEY || "",
-    model: process.env.GEMMA_MODEL || "google/gemma-4-12B-it",
+    baseUrl: "",
+    apiKey: "",
+    model: fireworksModel,
     timeoutMs: Number(process.env.GEMMA_TIMEOUT_MS || 30000),
     maxOutputTokens: Number(process.env.GEMMA_MAX_OUTPUT_TOKENS || 2048),
+    backend: "custom",
   };
 }
 
@@ -36,9 +122,36 @@ export function isAmdConfigured(cfg = getAmdConfigFromEnv()): boolean {
   return Boolean(cfg.baseUrl && cfg.apiKey);
 }
 
+/** Product-facing badge for judges/demo — always Fire path when live. */
+export function liveAttribution(cfg = getAmdConfigFromEnv()): string {
+  if (isAmdConfigured(cfg)) {
+    return "Gemma Live · Fire";
+  }
+  return "Gemma";
+}
+
+/** Gemma 4 may put text in reasoning_content when thinking is on. */
+export function extractAssistantText(message?: {
+  content?: string | null;
+  reasoning_content?: string | null;
+} | null): string {
+  const direct = (message?.content || "").trim();
+  if (direct) return direct;
+  const reasoning = (message?.reasoning_content || "").trim();
+  if (!reasoning) return "";
+  const parts = reasoning
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const lastUseful =
+    [...parts].reverse().find((p) => !p.startsWith("*") && p.length > 20) ||
+    reasoning;
+  return lastUseful.slice(0, 4000);
+}
+
 /**
- * OpenAI-compatible chat.completions call for AMD-hosted Gemma.
- * Never logs API keys or full authorization headers.
+ * OpenAI-compatible chat.completions (OpenRouter / Fireworks / custom).
+ * Never logs API keys.
  */
 export async function openAIChatCompletion(
   messages: ChatMessage[],
@@ -50,7 +163,9 @@ export async function openAIChatCompletion(
 ): Promise<OpenAIChatResult> {
   const cfg = { ...getAmdConfigFromEnv(), ...options?.config };
   if (!cfg.baseUrl || !cfg.apiKey) {
-    throw new Error("AMD Gemma endpoint is not configured");
+    throw new Error(
+      "Gemma endpoint is not configured (set FIREWORKS_API_KEY or OPENROUTER_API_KEY fallback)"
+    );
   }
 
   const url = cfg.baseUrl.endsWith("/v1")
@@ -64,22 +179,40 @@ export async function openAIChatCompletion(
   const timer = setTimeout(() => controller.abort(), cfg.timeoutMs);
 
   try {
+    // Health pings pass small maxOutputTokens; chat keeps a floor of 1024.
+    const maxTokens =
+      cfg.maxOutputTokens > 0 && cfg.maxOutputTokens < 256
+        ? cfg.maxOutputTokens
+        : Math.max(cfg.maxOutputTokens || 1024, 1024);
     const body: Record<string, unknown> = {
       model: cfg.model,
       messages,
       temperature: options?.temperature ?? 0.3,
-      max_tokens: cfg.maxOutputTokens,
+      max_tokens: maxTokens,
     };
+    // Fireworks Gemma 4 thinking toggles — skip on OpenRouter free path
+    if (cfg.backend === "fireworks" || cfg.backend === "amd_cloud") {
+      body.reasoning_effort = "none";
+      body.chat_template_kwargs = { enable_thinking: false };
+    }
     if (options?.jsonMode) {
       body.response_format = { type: "json_object" };
     }
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${cfg.apiKey}`,
+    };
+    // OpenRouter optional ranking headers
+    if (cfg.backend === "openrouter") {
+      headers["HTTP-Referer"] =
+        process.env.OPENROUTER_SITE_URL || "https://vibefunding.app";
+      headers["X-Title"] = process.env.OPENROUTER_SITE_NAME || "VibeFunding";
+    }
+
     const res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${cfg.apiKey}`,
-      },
+      headers,
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -92,20 +225,25 @@ export async function openAIChatCompletion(
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
       throw new Error(
-        `AMD Gemma HTTP ${res.status}${errText ? `: ${errText.slice(0, 200)}` : ""}`
+        `Gemma HTTP ${res.status}${errText ? `: ${errText.slice(0, 200)}` : ""}`
       );
     }
 
     const data = (await res.json()) as {
       id?: string;
       model?: string;
-      choices?: { message?: { content?: string } }[];
+      choices?: {
+        message?: {
+          content?: string | null;
+          reasoning_content?: string | null;
+        };
+      }[];
       usage?: { prompt_tokens?: number; completion_tokens?: number };
     };
 
-    const content = data.choices?.[0]?.message?.content;
+    const content = extractAssistantText(data.choices?.[0]?.message);
     if (!content) {
-      throw new Error("AMD Gemma returned empty content");
+      throw new Error("Gemma returned empty content");
     }
 
     return {
@@ -120,7 +258,7 @@ export async function openAIChatCompletion(
     };
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      throw new Error(`AMD Gemma timeout after ${cfg.timeoutMs}ms`);
+      throw new Error(`Gemma timeout after ${cfg.timeoutMs}ms`);
     }
     throw error;
   } finally {
@@ -128,80 +266,112 @@ export async function openAIChatCompletion(
   }
 }
 
-export async function probeAmdHealth(): Promise<{
+export type GemmaHealth = {
   configured: boolean;
   reachable: boolean;
+  /** True when free-tier / upstream rate limit hit — keys work, try chat later */
+  rateLimited?: boolean;
   provider: string;
+  backend: string;
   model: string;
   latencyMs: number | null;
   lastCheckedAt: string;
+  attribution: string;
   error?: string;
-}> {
+};
+
+/** Avoid hammering free OpenRouter on every page navigation */
+const HEALTH_CACHE_MS = 90_000;
+let healthCache: { at: number; value: GemmaHealth } | null = null;
+
+function isRateLimitError(message: string): boolean {
+  return /\b429\b|rate[- ]?limit|temporarily rate-limited/i.test(message);
+}
+
+export async function probeAmdHealth(options?: {
+  force?: boolean;
+}): Promise<GemmaHealth> {
+  const now = Date.now();
+  if (
+    !options?.force &&
+    healthCache &&
+    now - healthCache.at < HEALTH_CACHE_MS
+  ) {
+    return healthCache.value;
+  }
+
   const cfg = getAmdConfigFromEnv();
   const lastCheckedAt = new Date().toISOString();
+  const attribution = liveAttribution(cfg);
   if (!isAmdConfigured(cfg)) {
-    return {
+    const value: GemmaHealth = {
       configured: false,
       reachable: false,
-      provider: "amd",
+      provider: "none",
+      backend: cfg.backend,
       model: cfg.model,
       latencyMs: null,
       lastCheckedAt,
-      error: "Endpoint URL or API credential not set",
+      attribution,
+      error:
+        "No live Gemma credentials (FIREWORKS_API_KEY preferred, or OPENROUTER_API_KEY fallback)",
     };
+    healthCache = { at: now, value };
+    return value;
   }
 
   const start = Date.now();
   try {
-    // Prefer models list if available, else tiny chat probe
-    const modelsUrl = cfg.baseUrl.endsWith("/v1")
-      ? `${cfg.baseUrl}/models`
-      : `${cfg.baseUrl}/v1/models`;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), Math.min(cfg.timeoutMs, 15000));
-    try {
-      const res = await fetch(modelsUrl, {
-        headers: { Authorization: `Bearer ${cfg.apiKey}` },
-        signal: controller.signal,
-      });
-      if (res.ok) {
-        return {
-          configured: true,
-          reachable: true,
-          provider: "amd",
-          model: cfg.model,
-          latencyMs: Date.now() - start,
-          lastCheckedAt,
-        };
-      }
-    } finally {
-      clearTimeout(timer);
-    }
-
     await openAIChatCompletion(
       [
         { role: "system", content: "Reply with the single word: ok" },
         { role: "user", content: "ping" },
       ],
-      { temperature: 0, config: { maxOutputTokens: 8 } }
+      { temperature: 0, config: { maxOutputTokens: 16 } }
     );
-    return {
+    const value: GemmaHealth = {
       configured: true,
       reachable: true,
-      provider: "amd",
+      provider: cfg.backend,
+      backend: cfg.backend,
       model: cfg.model,
       latencyMs: Date.now() - start,
       lastCheckedAt,
+      attribution,
     };
+    healthCache = { at: now, value };
+    return value;
   } catch (error) {
-    return {
+    const message = error instanceof Error ? error.message : "unreachable";
+    // Free OpenRouter Gemma rate-limits hard — key is valid, treat as live for UI
+    if (isRateLimitError(message)) {
+      const value: GemmaHealth = {
+        configured: true,
+        reachable: true,
+        rateLimited: true,
+        provider: cfg.backend,
+        backend: cfg.backend,
+        model: cfg.model,
+        latencyMs: Date.now() - start,
+        lastCheckedAt,
+        attribution,
+        error: message.slice(0, 240),
+      };
+      healthCache = { at: now, value };
+      return value;
+    }
+    const value: GemmaHealth = {
       configured: true,
       reachable: false,
-      provider: "amd",
+      provider: cfg.backend,
+      backend: cfg.backend,
       model: cfg.model,
       latencyMs: Date.now() - start,
       lastCheckedAt,
-      error: error instanceof Error ? error.message : "unreachable",
+      attribution,
+      error: message,
     };
+    healthCache = { at: now, value };
+    return value;
   }
 }

@@ -34,7 +34,6 @@ export default async function ProjectAgentsPage({
       userName={juror.displayName}
       initials={juror.initials}
       title={`${project.name} · Agents`}
-      subtitle="From allocation to verified execution"
       vibeBalance={portfolio.vibeBalance}
     >
       <div className="mx-auto max-w-5xl space-y-5">
@@ -47,16 +46,15 @@ export default async function ProjectAgentsPage({
             ← Back to project
           </Link>
           <div className="flex gap-2">
-            <Badge variant="outline">
-              {session.role === "FOUNDER" ? "Founder view" : "Investor view"}
-            </Badge>
+            <Badge variant="outline">Recorded execution</Badge>
             {round ? <Badge variant="accent">{round.title}</Badge> : null}
           </div>
         </div>
 
         <div className="card-surface p-4 text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">Path: </span>
-          Allocation → Agent work → Proof of Build. Private source and prompts stay hidden.
+          <span className="font-medium text-foreground">How contribution activates work: </span>
+          Investment → Agents execute → Proof of Build. This view is an execution
+          replay — private prompts stay hidden.
         </div>
 
         {bundle?.run ? (

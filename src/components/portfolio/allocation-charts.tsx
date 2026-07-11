@@ -13,7 +13,15 @@ import {
   CartesianGrid,
 } from "recharts";
 
-const COLORS = ["#5b8cff", "#a78bfa", "#38bdf8", "#34d399", "#fbbf24", "#f472b6"];
+/* brand.md §13 chart sequence */
+const COLORS = [
+  "#55f6a9",
+  "#20d9c2",
+  "#8268ff",
+  "#3bc7ff",
+  "#ff5a3d",
+  "#f4b942",
+];
 
 export function CategoryDonut({
   data,
@@ -23,7 +31,7 @@ export function CategoryDonut({
   if (!data.length) {
     return (
       <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-        Allocate to see category exposure
+        Invest to see category exposure
       </div>
     );
   }

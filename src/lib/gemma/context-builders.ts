@@ -7,7 +7,10 @@ import {
   proofsOfBuild,
 } from "@/lib/db/schema";
 import { ensureSeeded } from "@/lib/demo/ensure-seeded";
-import { getPortfolio } from "@/lib/queries/portfolio";
+import {
+  getInvestedProjectSlugs,
+  getPortfolio,
+} from "@/lib/queries/portfolio";
 import { getProofById } from "@/lib/queries/proofs";
 import { getProjectBySlug } from "@/lib/queries/projects";
 import { INVESTOR_ID } from "@/lib/db/seed-data";
@@ -271,9 +274,10 @@ export function buildQuickstartPromptContext(input: {
     nextGoal: input.nextGoal.slice(0, 1000),
     evidence: (input.evidence || "").slice(0, 1500),
     platformNotes: {
-      resources: ["VIBE", "AMD_GPU_HOURS", "AGENT_HOURS", "AGENTIC_CREDITS"],
+      resources: ["VIBE → AMD GPU Cloud Credits"],
+      conversion: "50 VIBE = 1 AMD GPU Hour",
       settlement:
-        "VIBE immediate; productive capacity pending verification; rewards via Build Units",
+        "VIBE settles as AMD GPU Cloud Credits; Project Tokens from Build Units",
       founderControl: "Draft only — founder edits and publishes",
     },
   };
@@ -301,6 +305,8 @@ export function buildChatContextPayload(input: {
     base.portfolio = buildPortfolioContext({
       displayName: input.displayName,
     });
+    // Gemma must not re-suggest these for new investment
+    base.alreadyInvestedSlugs = [...getInvestedProjectSlugs(INVESTOR_ID)];
   }
   if (
     input.projectId ||

@@ -28,7 +28,7 @@ ENV DEMO_MODE=true
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV DATABASE_URL=file:/app/data/app.db
-ENV GEMMA_PROVIDER=demo
+ENV GEMMA_PROVIDER=auto
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 make g++ \

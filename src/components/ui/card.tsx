@@ -32,7 +32,12 @@ export function CardTitle({
   children: React.ReactNode;
 }) {
   return (
-    <h3 className={cn("text-base font-semibold tracking-tight text-foreground", className)}>
+    <h3
+      className={cn(
+        "font-display text-base font-semibold tracking-tight text-foreground",
+        className
+      )}
+    >
       {children}
     </h3>
   );

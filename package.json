@@ -12,7 +12,11 @@
     "test:watch": "vitest",
     "seed": "tsx scripts/seed.ts",
     "seed:reset": "tsx scripts/reset-demo.ts",
-    "db:reset": "tsx scripts/reset-demo.ts"
+    "demo:reset": "tsx scripts/reset-demo.ts",
+    "db:reset": "tsx scripts/reset-demo.ts",
+    "probe:fireworks": "tsx scripts/fireworks/probe-fireworks.ts",
+    "demo:tts": "node scripts/demo-record/generate-tts.mjs",
+    "demo:record": "node scripts/demo-record/record-demo.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
@@ -41,6 +45,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "15.5.20",
+    "playwright": "^1.61.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.0",
     "typescript": "^5",

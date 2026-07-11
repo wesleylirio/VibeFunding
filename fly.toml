@@ -1,0 +1,28 @@
+# Fly.io — Docker deploy
+# Primary path: fly secrets set FIREWORKS_API_KEY=... FIREWORKS_MODEL=accounts/.../deployments/...
+# Always-on fallback: fly secrets set OPENROUTER_API_KEY=...
+app = "vibefunding-demo"
+primary_region = "iad"
+
+[build]
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[env]
+  DEMO_MODE = "true"
+  GEMMA_PROVIDER = "auto"
+  FIREWORKS_BASE_URL = "https://api.fireworks.ai/inference/v1"
+  OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+  OPENROUTER_MODEL = "google/gemma-4-31b-it:free"
+  DATABASE_URL = "file:/app/data/app.db"
+  PORT = "3000"

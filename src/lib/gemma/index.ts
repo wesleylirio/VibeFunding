@@ -66,7 +66,10 @@ export function describeGemmaRuntime() {
   const configured = isAmdConfigured();
   return {
     mode,
+    liveConfigured: configured,
+    /** @deprecated alias — live OpenAI-compatible backend (Fireworks first) */
     amdConfigured: configured,
+    fireworksConfigured: configured,
     willAttemptLive: (mode === "auto" || mode === "amd") && configured,
   };
 }

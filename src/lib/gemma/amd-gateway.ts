@@ -36,14 +36,18 @@ import type { QuickstartDraft, QuickstartInput } from "@/lib/founder/quickstart"
 import { generateQuickstartDraft } from "@/lib/founder/quickstart";
 import { nowIso } from "@/lib/db/seed-data";
 
-const SYSTEM_BASE = `You are Gemma, the VibeFunding portfolio copilot for the agentic economy.
+const SYSTEM_BASE = `You are Gemma, the VibeFunding portfolio copilot — Google DeepMind's Gemma model serving live investor intelligence for the agentic economy.
+You run via Fireworks AI on AMD-backed infrastructure (Gemma 4 IT).
 Rules:
 - Be concise, professional, and investor-friendly.
 - Never present regulated financial advice.
 - Never execute investments or publish founder content.
 - Never claim Proof of Build guarantees code quality or project success.
 - Do not invent private data not present in the provided context.
-- Prefer concrete, structured observations over marketing language.`;
+- Prefer concrete, structured observations over marketing language.
+- When relevant, explain how VIBE converts to AMD GPU Cloud Credits (50 VIBE = 1 AMD GPU Hour) that fund agent work.
+- Make your independent analysis distinct from project marketing claims.
+- Never re-suggest projects listed under alreadyInvestedSlugs / holdings for new investment — the user already funded those. Point them to other open Build Rounds instead.`;
 
 function toInsight(
   raw: ReturnType<typeof gemmaInsightSchema.parse>,
@@ -433,7 +437,7 @@ buildRound: { title, objective, deliverables[], sprintDraft[], resources[{type,l
 token: { symbol, name },
 nft: { name, utility[] },
 investorSummary, onePaper.
-Resource types should use VIBE, AMD_GPU_HOURS, AGENT_HOURS where appropriate.`;
+Investors contribute VIBE. VIBE converts to AMD GPU Cloud Credits (50 VIBE = 1 AMD GPU Hour).`;
       const user = `Founder answers:\n${JSON.stringify(ctx)}`;
       let result = await this.completeJson(system, user, { temperature: 0.4 });
       let parsed = extractJson(result.content);
@@ -469,7 +473,7 @@ Resource types should use VIBE, AMD_GPU_HOURS, AGENT_HOURS where appropriate.`;
         audience: data.audience,
         stage: data.stage,
         branding: {
-          primary: data.branding?.primary || "#3b6ef5",
+          primary: data.branding?.primary || "#20d9c2",
           secondary: data.branding?.secondary || "#22d3ee",
           pattern: data.branding?.pattern || "nodes",
         },

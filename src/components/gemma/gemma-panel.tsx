@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
-import { Loader2, Minimize2, Send, Sparkles, X } from "lucide-react";
+import { Loader2, Minimize2, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { GemmaContext, GemmaProvider } from "@/lib/types";
+import { GemmaOrb } from "@/components/gemma/gemma-orb";
 
 type Message = {
   id: string;
@@ -183,7 +184,7 @@ export function GemmaPanel({
         onClick={() => setMinimized(false)}
         className="fixed bottom-20 right-4 z-30 flex items-center gap-2 rounded-full bg-gemma px-4 py-3 text-sm font-medium text-white shadow-lg md:bottom-6"
       >
-        <Sparkles className="h-4 w-4" />
+        <GemmaOrb size={20} state="idle" pulse={false} />
         Gemma
       </button>
     );
@@ -192,15 +193,13 @@ export function GemmaPanel({
   const panel = (
     <div
       className={cn(
-        "flex h-full flex-col border-l border-border bg-white",
+        "flex h-full flex-col border-l border-border bg-card",
         compact && "border-l-0"
       )}
     >
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gemma-soft text-gemma">
-            <Sparkles className="h-4 w-4" />
-          </div>
+          <GemmaOrb size={32} state={pending ? "analyzing" : "idle"} pulse={pending} />
           <div>
             <div className="text-sm font-semibold">Gemma</div>
             <div className="text-[11px] text-muted-foreground">
@@ -240,7 +239,7 @@ export function GemmaPanel({
             className={cn(
               "rounded-xl px-3 py-2.5 text-sm leading-relaxed",
               m.role === "user"
-                ? "ml-6 bg-foreground text-white"
+                ? "ml-6 bg-primary text-primary-foreground"
                 : "mr-2 bg-gemma-soft text-foreground"
             )}
           >
@@ -287,7 +286,7 @@ export function GemmaPanel({
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask Gemma…"
             rows={2}
-            className="flex-1 resize-none rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none focus:border-gemma focus:ring-2 focus:ring-gemma/15"
+            className="flex-1 resize-none rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm outline-none focus:border-gemma focus:ring-2 focus:ring-gemma/15"
           />
           <Button type="submit" variant="gemma" size="icon" disabled={pending}>
             <Send className="h-4 w-4" />
@@ -322,11 +321,11 @@ export function GemmaPanel({
 function ProviderBadge({ provider }: { provider: GemmaProvider }) {
   const label =
     provider === "AMD_GEMMA"
-      ? "Live · AMD Gemma"
+      ? "Gemma Live · Fire"
       : provider === "CACHE"
         ? "Cached response"
-        : "Demo Mode";
-  return <Badge variant="gemma">{label}</Badge>;
+        : "Local intelligence";
+  return <Badge variant={provider === "AMD_GEMMA" ? "compute" : "gemma"}>{label}</Badge>;
 }
 
 export function GemmaFab({ onClick }: { onClick: () => void }) {
@@ -334,10 +333,10 @@ export function GemmaFab({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="fixed bottom-20 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-gemma text-white shadow-lg xl:hidden"
+      className="fixed bottom-20 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full xl:hidden"
       aria-label="Open Gemma"
     >
-      <Sparkles className="h-5 w-5" />
+      <GemmaOrb size={48} state="idle" />
     </button>
   );
 }

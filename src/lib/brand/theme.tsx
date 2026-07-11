@@ -8,22 +8,25 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** Product UI only exposes light/dark. System is still accepted if previously stored. */
 export type ThemePreference = "light" | "dark" | "system";
+export type ResolvedTheme = "light" | "dark";
 
 const THEME_KEY = "vf-theme";
 
 type ThemeContextValue = {
   preference: ThemePreference;
-  resolved: "light" | "dark";
+  resolved: ResolvedTheme;
   setPreference: (p: ThemePreference) => void;
+  toggle: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function resolveTheme(pref: ThemePreference): "light" | "dark" {
+function resolveTheme(pref: ThemePreference): ResolvedTheme {
   if (pref === "system") {
     if (typeof window === "undefined") return "dark";
     return window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -33,7 +36,7 @@ function resolveTheme(pref: ThemePreference): "light" | "dark" {
   return pref;
 }
 
-function applyTheme(resolved: "light" | "dark") {
+function applyTheme(resolved: ResolvedTheme) {
   const root = document.documentElement;
   root.classList.remove("light", "dark");
   root.classList.add(resolved);
@@ -41,17 +44,21 @@ function applyTheme(resolved: "light" | "dark") {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [preference, setPreferenceState] = useState<ThemePreference>("system");
-  const [resolved, setResolved] = useState<"light" | "dark">("dark");
+  const [preference, setPreferenceState] = useState<ThemePreference>("dark");
+  const [resolved, setResolved] = useState<ResolvedTheme>("dark");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem(THEME_KEY) as ThemePreference | null;
-      const pref =
+      let pref: ThemePreference =
         stored === "light" || stored === "dark" || stored === "system"
           ? stored
-          : "system";
+          : "dark";
+      // Migrate system → resolved dark/light for product UI
+      if (pref === "system") {
+        pref = resolveTheme("system");
+      }
       setPreferenceState(pref);
       const r = resolveTheme(pref);
       setResolved(r);
@@ -68,31 +75,28 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setResolved(r);
     applyTheme(r);
     try {
-      localStorage.setItem(THEME_KEY, preference);
+      // Persist only light/dark in product UI
+      const store = preference === "system" ? r : preference;
+      localStorage.setItem(THEME_KEY, store);
     } catch {
       /* ignore */
     }
   }, [preference, ready]);
 
-  useEffect(() => {
-    if (preference !== "system") return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = () => {
-      const r = resolveTheme("system");
-      setResolved(r);
-      applyTheme(r);
-    };
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, [preference]);
-
   const setPreference = useCallback((p: ThemePreference) => {
-    setPreferenceState(p);
+    setPreferenceState(p === "system" ? resolveTheme("system") : p);
+  }, []);
+
+  const toggle = useCallback(() => {
+    setPreferenceState((prev) => {
+      const current = prev === "system" ? resolveTheme("system") : prev;
+      return current === "dark" ? "light" : "dark";
+    });
   }, []);
 
   const value = useMemo(
-    () => ({ preference, resolved, setPreference }),
-    [preference, resolved, setPreference]
+    () => ({ preference, resolved, setPreference, toggle }),
+    [preference, resolved, setPreference, toggle]
   );
 
   return (
@@ -106,45 +110,23 @@ export function useTheme() {
   return ctx;
 }
 
+/** Single sun/moon toggle — Light and Dark only (no System in product UI). */
 export function ThemeSelector({ className }: { className?: string }) {
-  const { preference, setPreference } = useTheme();
-  const options: { id: ThemePreference; icon: typeof Sun; label: string }[] = [
-    { id: "light", icon: Sun, label: "Light" },
-    { id: "dark", icon: Moon, label: "Dark" },
-    { id: "system", icon: Monitor, label: "System" },
-  ];
+  const { resolved, toggle } = useTheme();
+  const isDark = resolved === "dark";
 
   return (
-    <div
+    <button
+      type="button"
+      title={isDark ? "Switch to light" : "Switch to dark"}
+      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      onClick={toggle}
       className={cn(
-        "inline-flex rounded-xl border border-border bg-muted/40 p-0.5",
+        "inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-muted/40 text-muted-foreground transition hover:bg-muted hover:text-foreground",
         className
       )}
-      role="group"
-      aria-label="Theme"
     >
-      {options.map((opt) => {
-        const Icon = opt.icon;
-        const active = preference === opt.id;
-        return (
-          <button
-            key={opt.id}
-            type="button"
-            title={opt.label}
-            aria-label={opt.label}
-            aria-pressed={active}
-            onClick={() => setPreference(opt.id)}
-            className={cn(
-              "rounded-lg p-1.5 transition",
-              active
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Icon className="h-3.5 w-3.5" />
-          </button>
-        );
-      })}
-    </div>
+      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </button>
   );
 }

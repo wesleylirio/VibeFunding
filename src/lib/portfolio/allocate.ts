@@ -16,11 +16,14 @@ import type { ResourceType } from "@/lib/types";
 import {
   getConversionRate,
   previewAllocation,
+  vibeToAmdGpuHours,
 } from "@/lib/resources/conversion";
+import { ensureFirstProofForBuildRound } from "@/lib/proof-of-build/builder";
 
 export type AllocateInput = {
   investorId: string;
   buildRoundId: string;
+  /** Investor contributions use VIBE. */
   resourceType: ResourceType;
   amount: number;
 };
@@ -152,15 +155,22 @@ export function allocateToRound(input: AllocateInput) {
     .get();
   if (!investor) throw new Error("Investor not found.");
 
-  const conversion = getConversionRate(input.resourceType);
+  if (input.resourceType !== "VIBE") {
+    throw new Error(
+      "Contribute with VIBE. VIBE converts to AMD GPU Cloud Credits (50 VIBE = 1 AMD GPU Hour)."
+    );
+  }
+
+  const conversion = getConversionRate("VIBE");
   const preview = previewAllocation({
     projectId: project.id,
-    resourceType: input.resourceType,
+    resourceType: "VIBE",
     amount: input.amount,
   });
+  const amdGpuHours = vibeToAmdGpuHours(input.amount);
 
-  // Liquid capital: debit VIBE balance
-  if (input.resourceType === "VIBE") {
+  // Debit VIBE balance
+  {
     const vibeHolding = db
       .select()
       .from(holdings)
@@ -241,20 +251,37 @@ export function allocateToRound(input: AllocateInput) {
     .where(eq(buildRounds.id, round.id))
     .run();
 
-  const resource = db
+  // Credit VIBE requirement and AMD GPU Hours requirement (via conversion)
+  const vibeReq = db
     .select()
     .from(resourceRequirements)
     .where(
       and(
         eq(resourceRequirements.buildRoundId, round.id),
-        eq(resourceRequirements.type, input.resourceType)
+        eq(resourceRequirements.type, "VIBE")
       )
     )
     .get();
-  if (resource) {
+  if (vibeReq) {
     db.update(resourceRequirements)
-      .set({ fundedAmount: resource.fundedAmount + input.amount })
-      .where(eq(resourceRequirements.id, resource.id))
+      .set({ fundedAmount: vibeReq.fundedAmount + input.amount })
+      .where(eq(resourceRequirements.id, vibeReq.id))
+      .run();
+  }
+  const gpuReq = db
+    .select()
+    .from(resourceRequirements)
+    .where(
+      and(
+        eq(resourceRequirements.buildRoundId, round.id),
+        eq(resourceRequirements.type, "AMD_GPU_HOURS")
+      )
+    )
+    .get();
+  if (gpuReq && amdGpuHours > 0) {
+    db.update(resourceRequirements)
+      .set({ fundedAmount: gpuReq.fundedAmount + amdGpuHours })
+      .where(eq(resourceRequirements.id, gpuReq.id))
       .run();
   }
 
@@ -302,8 +329,13 @@ export function allocateToRound(input: AllocateInput) {
     }
   }
 
+  // A startup's first allocation must create a real replayable Proof before
+  // the client navigates to it. Existing projects reuse their latest Proof.
+  const proof = ensureFirstProofForBuildRound(round.id);
+
   return {
     allocationId,
+    proofId: proof.id,
     rewardTokens: preview.estimatedTokens,
     tokensReleased,
     rewardNftId,
@@ -313,8 +345,10 @@ export function allocateToRound(input: AllocateInput) {
     projectId: project.id,
     tokenSymbol: project.tokenSymbol,
     buildUnits: preview.buildUnits,
+    amdGpuHours,
+    conversionLabel: preview.conversionLabel,
     settlementStatus,
-    requiresVerification: conversion.requiresVerification,
+    requiresVerification: false,
     resourceLabel: conversion.label,
     unitLabel: conversion.unitLabel,
     amount: input.amount,

@@ -65,8 +65,12 @@ export interface GemmaResponse {
 export const RESOURCE_LABELS: Record<ResourceType, string> = {
   VIBE: "VIBE",
   STABLECOIN: "Stablecoin",
-  AGENT_TOKENS: "Agentic credits",
+  AGENT_TOKENS: "Model credits",
   AGENT_HOURS: "Agent hours",
-  AMD_GPU_HOURS: "AMD GPU hours",
+  AMD_GPU_HOURS: "AMD GPU Hours",
   COMPUTE_UNITS: "Compute units",
 };
+
+/** Product copy: VIBE funds AMD GPU Cloud Credits for agent work. */
+export const CONTRIBUTION_BLURB =
+  "Contribute with VIBE. Every VIBE converts into AMD GPU Cloud Credits that power agent work — 50 VIBE = 1 AMD GPU Hour.";

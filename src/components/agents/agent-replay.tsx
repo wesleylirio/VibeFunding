@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   Circle,
-  FastForward,
   FileCode2,
   Pause,
   Play,
@@ -13,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatNumber } from "@/lib/utils";
-import Link from "next/link";
 
 export type ReplayEvent = {
   id: string;
@@ -26,14 +24,18 @@ export type ReplayEvent = {
   privatePayload?: Record<string, unknown>;
 };
 
+/** Target full run length at 1x (demo pacing). */
+const TARGET_DURATION_MS = 60_000;
+
 export function AgentReplay({
   run,
   events,
-  proofId,
   role,
   projectName,
-  accentColor = "#5b8cff",
+  accentColor = "#20d9c2",
   roundTitle,
+  onComplete,
+  compactHeader = false,
 }: {
   run: {
     id: string;
@@ -55,16 +57,18 @@ export function AgentReplay({
     publicSummary?: string | null;
   };
   events: ReplayEvent[];
-  proofId?: string | null;
   role: "INVESTOR" | "FOUNDER";
   projectName?: string;
   accentColor?: string;
   roundTitle?: string;
+  /** Fired once when replay finishes (or is skipped) */
+  onComplete?: () => void;
+  compactHeader?: boolean;
 }) {
   const [playing, setPlaying] = useState(true);
-  const [speed, setSpeed] = useState<1 | 2 | 4 | 8>(2);
+  const [speed, setSpeed] = useState<1 | 2>(1);
   const [cursor, setCursor] = useState(0);
-  const done = cursor >= events.length;
+  const done = events.length === 0 || cursor >= events.length;
 
   const productLabel =
     run.replayLabel.toLowerCase().includes("demo")
@@ -73,24 +77,48 @@ export function AgentReplay({
         ? "Recorded execution"
         : "Archived run";
 
+  // Scale seed delays so total ≈ 60s at 1x
+  const delayScale = useMemo(() => {
+    const raw = events.reduce((s, e) => s + Math.max(200, e.delayMs || 500), 0);
+    if (raw <= 0) return 1;
+    return TARGET_DURATION_MS / raw;
+  }, [events]);
+
   useEffect(() => {
     if (!playing || done) return;
-    const delay = Math.max(120, (events[cursor]?.delayMs ?? 500) / speed);
+    const base = Math.max(200, events[cursor]?.delayMs ?? 500);
+    const delay = Math.max(250, (base * delayScale) / speed);
     const t = setTimeout(() => setCursor((c) => c + 1), delay);
     return () => clearTimeout(t);
-  }, [playing, cursor, done, events, speed]);
+  }, [playing, cursor, done, events, speed, delayScale]);
+
+  useEffect(() => {
+    if (done && events.length > 0) {
+      onComplete?.();
+    }
+    // only when done flips true
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
 
   const visible = useMemo(() => events.slice(0, cursor), [events, cursor]);
+  const progress =
+    events.length === 0 ? 100 : Math.min(100, Math.round((cursor / events.length) * 100));
 
   return (
     <div className="card-surface overflow-hidden">
       <div
-        className="h-1"
+        className="h-1.5 transition-all duration-500"
         style={{
-          background: `linear-gradient(90deg, ${accentColor}, transparent)`,
+          width: `${progress}%`,
+          background: `linear-gradient(90deg, ${accentColor}, #8268ff)`,
         }}
       />
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-5">
+      <div
+        className={cn(
+          "flex flex-wrap items-start justify-between gap-3 border-b border-border p-5",
+          compactHeader && "p-4"
+        )}
+      >
         <div className="flex items-start gap-3">
           <div
             className="flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-bold text-white"
@@ -102,8 +130,8 @@ export function AgentReplay({
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-base font-semibold">{run.taskTitle}</h2>
               <Badge variant="outline">{productLabel}</Badge>
-              <Badge variant={run.status === "COMPLETED" ? "success" : "warning"}>
-                {done || run.status === "COMPLETED" ? "COMPLETED" : "RUNNING"}
+              <Badge variant={done ? "success" : "warning"}>
+                {done ? "COMPLETED" : "RUNNING"}
               </Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -113,6 +141,8 @@ export function AgentReplay({
               Compute: {run.computeSource}
               {projectName ? ` · ${projectName}` : ""}
               {roundTitle ? ` · ${roundTitle}` : ""}
+              {" · "}
+              ~{Math.round(TARGET_DURATION_MS / 1000 / speed)}s at {speed}x
             </p>
           </div>
         </div>
@@ -122,6 +152,7 @@ export function AgentReplay({
             size="sm"
             variant="secondary"
             onClick={() => setPlaying((p) => !p)}
+            disabled={done}
           >
             {playing && !done ? (
               <>
@@ -133,7 +164,7 @@ export function AgentReplay({
               </>
             )}
           </Button>
-          {([1, 2, 4, 8] as const).map((s) => (
+          {([1, 2] as const).map((s) => (
             <Button
               key={s}
               type="button"
@@ -153,16 +184,16 @@ export function AgentReplay({
               setPlaying(false);
             }}
           >
-            <SkipForward className="h-3.5 w-3.5" /> Skip to result
+            <SkipForward className="h-3.5 w-3.5" /> Skip
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-0 lg:grid-cols-[1fr_240px]">
+      <div className="grid gap-0 lg:grid-cols-[1fr_220px]">
         <div className="space-y-0 p-5">
           {visible.length === 0 ? (
             <p className="text-sm text-muted-foreground animate-pulse-soft">
-              Agent starting…
+              Agent starting on AMD GPU…
             </p>
           ) : null}
           <ol>
@@ -211,20 +242,13 @@ export function AgentReplay({
           {done ? (
             <div className="mt-2 rounded-2xl border border-success/30 bg-[var(--success-soft)] p-4 animate-reveal-up">
               <div className="flex items-center gap-2 text-sm font-medium text-success">
-                <FastForward className="h-4 w-4" />
+                <CheckCircle2 className="h-4 w-4" />
                 Execution complete
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                {run.publicSummary || "Recorded execution finished successfully."}
+                {run.publicSummary ||
+                  "Recorded execution finished. Rewards are ready below."}
               </p>
-              {proofId ? (
-                <Link
-                  href={`/proofs/${proofId}`}
-                  className="mt-3 inline-flex text-sm font-medium text-accent hover:underline"
-                >
-                  Open Proof of Build →
-                </Link>
-              ) : null}
             </div>
           ) : null}
         </div>
@@ -242,7 +266,10 @@ export function AgentReplay({
               label="Compute time"
               value={`${formatNumber(run.computeTimeSeconds ?? 0)}s`}
             />
-            <Metric label="Files changed" value={String(run.filesChanged ?? 0)} />
+            <Metric
+              label="Files changed"
+              value={String(run.filesChanged ?? 0)}
+            />
             <Metric
               label="Tests"
               value={`${run.testsPassed ?? 0}/${run.testsTotal ?? 0}`}

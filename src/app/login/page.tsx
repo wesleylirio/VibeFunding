@@ -7,18 +7,15 @@ import { VibeWordmark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeSelector } from "@/lib/brand/theme";
-import type { DemoRole } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const defaultRole =
-    params.get("role") === "FOUNDER" ? "FOUNDER" : "INVESTOR";
   const next = params.get("next") || "";
 
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<DemoRole>(defaultRole);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -40,16 +37,15 @@ function LoginForm() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             displayName: displayName.trim(),
-            // password accepted for demo UX only — never persisted server-side
             password: password.trim(),
-            role,
+            role: "INVESTOR",
           }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Login failed");
+        // Founder destinations are not available — land on Discover
         const dest =
-          next ||
-          (role === "FOUNDER" ? "/founder" : "/portfolio");
+          next && !next.startsWith("/founder") ? next : "/discover";
         router.push(dest);
         router.refresh();
       } catch (err) {
@@ -69,9 +65,12 @@ function LoginForm() {
 
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 pb-16">
         <div className="card-surface p-6 md:p-8">
-          <h1 className="text-2xl font-semibold tracking-tight">Welcome</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">
+            Sign in
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Use any name and password. No real account will be created.
+            Enter as an investor to discover projects, fund Build Rounds with
+            VIBE, and follow verified progress.
           </p>
 
           <form onSubmit={submit} className="mt-6 space-y-4">
@@ -83,7 +82,7 @@ function LoginForm() {
                 className="mt-1"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Wesley Kennedy"
+                placeholder="Your Name"
                 autoComplete="nickname"
               />
             </div>
@@ -100,38 +99,40 @@ function LoginForm() {
                 autoComplete="off"
               />
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Not stored. For demo flow only.
+                Not stored — used only for this session flow.
               </p>
             </div>
+
             <div>
               <label className="text-xs font-medium text-muted-foreground">
-                Enter as
+                Account type
               </label>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {(["INVESTOR", "FOUNDER"] as DemoRole[]).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRole(r)}
-                    className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
-                      role === r
-                        ? "border-accent bg-accent-soft text-accent"
-                        : "border-border hover:bg-muted"
-                    }`}
+                <div className="rounded-[var(--vf-radius-sm)] border border-primary bg-vibe-soft px-3 py-2.5 text-sm font-medium text-vibe">
+                  Investor
+                </div>
+                <div
+                  className="relative rounded-[var(--vf-radius-sm)] border border-border bg-muted/40 px-3 py-2.5 text-sm font-medium text-muted-foreground"
+                  title="Coming soon for selected startups"
+                >
+                  <span className="opacity-70">Founder</span>
+                  <Badge
+                    variant="outline"
+                    className="absolute -right-1 -top-2 text-[9px]"
                   >
-                    {r === "INVESTOR" ? "Investor" : "Founder"}
-                  </button>
-                ))}
+                    Coming soon
+                  </Badge>
+                </div>
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">
-                Investor is the default journey. You can switch roles anytime.
+                Founder Mode is opening first for selected startups.
               </p>
             </div>
 
             {error ? <p className="text-sm text-danger">{error}</p> : null}
 
             <Button type="submit" variant="accent" className="w-full" disabled={pending}>
-              {pending ? "Entering…" : "Enter VibeFunding"}
+              {pending ? "Entering…" : "Continue as Investor"}
             </Button>
           </form>
         </div>
