@@ -1,5 +1,5 @@
 ---
-title: VibeFunding
+title: VibeFunding — Agentic Startup Launchpad
 emoji: 🚀
 colorFrom: blue
 colorTo: green
