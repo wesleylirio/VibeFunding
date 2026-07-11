@@ -1,5 +1,4 @@
 # syntax=docker/dockerfile:1
-# Hugging Face Spaces: listens on port 7860, runs as UID 1000, DB in /data
 
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
@@ -18,17 +17,17 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DEMO_MODE=true
-ENV DATABASE_URL=file:/data/app.db
-RUN mkdir -p /data && npm run build
+ENV DATABASE_URL=file:/app/data/app.db
+RUN mkdir -p /app/data && npm run build
 
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DEMO_MODE=true
-ENV PORT=7860
+ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-ENV DATABASE_URL=file:/data/app.db
+ENV DATABASE_URL=file:/app/data/app.db
 ENV GEMMA_PROVIDER=auto
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -45,13 +44,11 @@ COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/next.config.ts ./next.config.ts
 
-RUN mkdir -p /data /data/runs /data/proofs \
-    && chown -R 1000:1000 /app /data
+RUN mkdir -p /app/data /app/data/runs /app/data/proofs
 
-USER 1000
-EXPOSE 7860
+EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:7860/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 CMD ["npm", "run", "start"]

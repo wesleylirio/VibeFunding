@@ -1,12 +1,3 @@
----
-title: VibeFunding — Agentic Startup Launchpad
-emoji: 🚀
-colorFrom: blue
-colorTo: green
-sdk: docker
-app_port: 7860
----
-
 # VibeFunding
 
 **Web3 launchpad for agentic startups.**  
@@ -26,7 +17,7 @@ npm run seed
 npm run dev
 ```
 
-Open [http://localhost:7860](http://localhost:7860).
+Open [http://localhost:3000](http://localhost:3000).
 
 ```bash
 npm test
@@ -92,7 +83,7 @@ Health (no secrets): `GET /api/gemma/health`
 ```bash
 docker build -t vibefunding .
 # Primary (when you have a Fireworks deployment):
-docker run -p 7860:7860 \
+docker run -p 3000:3000 \
   -e DEMO_MODE=true \
   -e GEMMA_PROVIDER=auto \
   -e FIREWORKS_API_KEY=your_key \
@@ -100,7 +91,7 @@ docker run -p 7860:7860 \
   vibefunding
 
 # Always-on fallback (free OpenRouter if Fireworks credits are gone):
-docker run -p 7860:7860 \
+docker run -p 3000:3000 \
   -e DEMO_MODE=true \
   -e GEMMA_PROVIDER=auto \
   -e OPENROUTER_API_KEY=your_key \
@@ -111,7 +102,7 @@ docker run -p 7860:7860 \
 
 | Platform | Config |
 |---|---|
-| **Hugging Face Spaces** | Docker SDK — push to HF Space repo |
+| **SnapDeploy** | Connect GitHub repo — auto-deploy |
 | Render | `render.yaml` (legacy) |
 | Fly.io | `fly.toml` (legacy) |
 | Local Docker | `docker-compose.yml` |
