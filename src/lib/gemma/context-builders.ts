@@ -275,7 +275,7 @@ export function buildQuickstartPromptContext(input: {
     evidence: (input.evidence || "").slice(0, 1500),
     platformNotes: {
       resources: ["VIBE → AMD GPU Cloud Credits"],
-      conversion: "50 VIBE = 1 AMD GPU Hour",
+      conversion: "Demo rate: 1,000 VIBE = 1 AMD GPU Hour",
       settlement:
         "VIBE settles as AMD GPU Cloud Credits; Project Tokens from Build Units",
       founderControl: "Draft only — founder edits and publishes",

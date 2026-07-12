@@ -65,7 +65,7 @@ const BEATS = [
   {
     eyebrow: "Conversion",
     title: "VIBE docks into AMD compute.",
-    body: "50 VIBE → 1 GPU hour. Your investment seats into a real compute key.",
+    body: "1,000 VIBE → 1 AMD GPU hour (demo rate). Your allocation activates a compute budget.",
   },
   {
     eyebrow: "AMD GPUs online",

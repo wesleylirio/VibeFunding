@@ -108,7 +108,7 @@ export function OnePaperModal({
                 </h3>
                 <p className="mt-1 text-muted-foreground">
                   Contribute with VIBE. VIBE converts to AMD GPU Cloud Credits for
-                  agent execution (50 VIBE = 1 AMD GPU Hour). Project Tokens are
+                  agent execution (demo rate: 1,000 VIBE = 1 AMD GPU Hour). Project Tokens are
                   estimated from Build Units and settle with your contribution.
                 </p>
                 {project.tokenSymbol ? (

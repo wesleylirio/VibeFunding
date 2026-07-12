@@ -12,6 +12,7 @@ export interface ProjectAnalysisInput {
 
 export interface PortfolioAnalysisInput {
   investorId: string;
+  displayName?: string;
 }
 
 export interface ProofSummaryInput {

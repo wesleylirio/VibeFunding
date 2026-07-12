@@ -2,7 +2,7 @@ import { ArtworkPlaceholder } from "./artwork-placeholder";
 import { SectionEyebrow, SectionShell } from "./section-shell";
 
 const METRICS = [
-  { label: "Conversion", value: "50 VIBE", sub: "→ 1 GPU hour" },
+  { label: "Demo conversion", value: "1,000 VIBE", sub: "→ 1 AMD GPU hour" },
   { label: "Destination", value: "AMD GPU", sub: "agent capacity" },
   { label: "Outcome", value: "Build power", sub: "not idle capital" },
 ];

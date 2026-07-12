@@ -45,7 +45,7 @@ Rules:
 - Never claim Proof of Build guarantees code quality or project success.
 - Do not invent private data not present in the provided context.
 - Prefer concrete, structured observations over marketing language.
-- When relevant, explain how VIBE converts to AMD GPU Cloud Credits (50 VIBE = 1 AMD GPU Hour) that fund agent work.
+- When relevant, explain the demo conversion: 1,000 VIBE = 1 AMD GPU Hour. Clarify that this is a simulated product rate, not a market price.
 - Make your independent analysis distinct from project marketing claims.
 - Never re-suggest projects listed under alreadyInvestedSlugs / holdings for new investment — the user already funded those. Point them to other open Build Rounds instead. If they ask about a project they already hold, analyze it as a holding review, not a new investment pitch.
 - If context shows the project's Build Round is already 100% funded, tell the user the round is full and suggest they wait for the next round.
@@ -275,7 +275,10 @@ Guidelines:
   }
 
   async analyzePortfolio(input: PortfolioAnalysisInput): Promise<GemmaInsight> {
-    const ctx = await buildPortfolioContext({ investorId: input.investorId });
+    const ctx = await buildPortfolioContext({
+      investorId: input.investorId,
+      displayName: input.displayName,
+    });
     if (!this.configured) return this.fallback.analyzePortfolio(input);
 
     const key = `portfolio:${contextHash("INVESTOR_PORTFOLIO", ctx)}`;
@@ -478,7 +481,7 @@ buildRound: { title, objective, deliverables[], sprintDraft[], resources[{type,l
 token: { symbol, name },
 nft: { name, utility[] },
 investorSummary, onePaper.
-Investors contribute VIBE. VIBE converts to AMD GPU Cloud Credits (50 VIBE = 1 AMD GPU Hour).`;
+Investors contribute VIBE. In the demo, VIBE allocates AMD GPU Cloud Credits at 1,000 VIBE = 1 AMD GPU Hour. This is a simulated product rate, not a market price.`;
       const user = `Founder answers:\n${JSON.stringify(ctx)}`;
       let result = await this.completeJson(system, user, { temperature: 0.4 });
       let parsed = extractJson(result.content);

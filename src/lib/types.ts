@@ -73,4 +73,4 @@ export const RESOURCE_LABELS: Record<ResourceType, string> = {
 
 /** Product copy: VIBE funds AMD GPU Cloud Credits for agent work. */
 export const CONTRIBUTION_BLURB =
-  "Contribute with VIBE. Every VIBE converts into AMD GPU Cloud Credits that power agent work — 50 VIBE = 1 AMD GPU Hour.";
+  "Contribute with VIBE. VIBE allocates AMD GPU Cloud Credits that power agent work — demo rate: 1,000 VIBE = 1 AMD GPU Hour.";

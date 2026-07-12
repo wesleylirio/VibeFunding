@@ -9,16 +9,16 @@ import type { ResourceType } from "@/lib/types";
  * AMD Developer Hackathon Track 3 (agentic startups + compute-backed builds).
  *
  * Rate:
- *   50 VIBE = 1 AMD GPU Hour
+ *   1,000 VIBE = 1 AMD GPU Hour (demo conversion)
  *
  * Build Units remain an internal normalization (1 VIBE → 1 BU) for token math.
  */
 
 /** How many VIBE equal one AMD GPU hour. */
-export const VIBE_PER_AMD_GPU_HOUR = 50;
+export const VIBE_PER_AMD_GPU_HOUR = 1000;
 
 /** Product-facing conversion line for UI. */
-export const VIBE_AMD_CONVERSION_LABEL = "50 VIBE = 1 AMD GPU Hour";
+export const VIBE_AMD_CONVERSION_LABEL = "1,000 VIBE = 1 AMD GPU Hour · demo rate";
 
 /**
  * Internal normalization to Build Units (BU).
@@ -48,7 +48,7 @@ export const CONVERSION_RATES: Record<ResourceType, ResourceConversionRate> = {
     buildUnitsPerUnit: 1,
     requiresVerification: false,
     description:
-      "Invest VIBE to fund AMD GPU Cloud Credits for agent execution. Converts immediately — 50 VIBE = 1 AMD GPU Hour.",
+      "Invest VIBE to fund AMD GPU Cloud Credits for agent execution. Demo conversion: 1,000 VIBE = 1 AMD GPU Hour.",
   },
   STABLECOIN: {
     resourceType: "STABLECOIN",
@@ -65,7 +65,7 @@ export const CONVERSION_RATES: Record<ResourceType, ResourceConversionRate> = {
     buildUnitsPerUnit: VIBE_PER_AMD_GPU_HOUR,
     requiresVerification: true,
     description:
-      "AMD GPU Cloud Credits funded through VIBE conversion (50 VIBE = 1 hour).",
+      "AMD GPU Cloud Credits funded through VIBE conversion (demo rate: 1,000 VIBE = 1 hour).",
   },
   AGENT_HOURS: {
     resourceType: "AGENT_HOURS",

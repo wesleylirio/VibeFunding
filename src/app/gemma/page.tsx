@@ -23,6 +23,7 @@ export default async function GemmaPage() {
   const portfolio = await getPortfolio(session.investorId);
   const briefing = await getGemmaGateway().analyzePortfolio({
     investorId: session.investorId,
+    displayName: juror.displayName,
   });
   const { items } = await listProjects({ sort: "TRENDING", limit: 6 });
   const matches = items.filter((p) => p.detailed || p.proofCount > 0).slice(0, 3);

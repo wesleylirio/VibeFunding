@@ -254,7 +254,7 @@ What would you like to examine?`;
     });
   }
 
-  async analyzePortfolio(input?: { investorId: string }): Promise<GemmaInsight> {
+  async analyzePortfolio(input?: { investorId: string; displayName?: string }): Promise<GemmaInsight> {
     await ensureSeeded();
     const investorId = input?.investorId || "user-investor-demo";
     const portfolio = await getPortfolio(investorId);
@@ -479,7 +479,7 @@ async function discoveryMatchesText(): Promise<string> {
   const heldNote = held.size
     ? `\n\nSkipped (already invested): ${[...held].join(", ")}.`
     : "";
-  return `Here are projects I’d look at next (not ones you already funded):\n\n${lines}${heldNote}\n\nInvest with VIBE (50 VIBE = 1 AMD GPU Hour). This is informational only.`;
+  return `Here are projects I’d look at next (not ones you already funded):\n\n${lines}${heldNote}\n\nInvest with VIBE (demo rate: 1,000 VIBE = 1 AMD GPU Hour). This is informational only.`;
 }
 
 async function explainBuildRound(input: GemmaChatInput) {

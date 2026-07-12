@@ -163,7 +163,7 @@ async function buildProactiveInsight(input: {
         return {
           teaser: `I matched ${matches.length} new project${matches.length === 1 ? "" : "s"} for you — open chat.`,
           title: "Your matches",
-          content: `${firstName}, based on your profile (**${prefs.interests.slice(0, 2).join(", ")}** · ${prefs.stage} · ${prefs.risk} risk), here is where I would look next:\n\n${lines}\n\nOpen any project above to invest **VIBE** (50 VIBE = 1 AMD GPU Hour).${heldNote}`,
+          content: `${firstName}, based on your profile (**${prefs.interests.slice(0, 2).join(", ")}** · ${prefs.stage} · ${prefs.risk} risk), here is where I would look next:\n\n${lines}\n\nOpen any project above to invest **VIBE** (demo rate: 1,000 VIBE = 1 AMD GPU Hour).${heldNote}`,
           provider: "DEMO" as const,
           attribution: null,
           // Key changes when holdings change so we don't keep an old "seen" match list
@@ -185,7 +185,7 @@ async function buildProactiveInsight(input: {
     return {
       teaser: "I can match projects to what you care about.",
       title: "Discovery help",
-      content: `${firstName}, tell me what matters — stage, risk, or AMD GPU-backed shipping — and I’ll point you to Build Rounds that fit. You invest with VIBE (50 VIBE = 1 AMD GPU Hour).`,
+      content: `${firstName}, tell me what matters — stage, risk, or AMD GPU-backed shipping — and I’ll point you to Build Rounds that fit. You invest with VIBE (demo rate: 1,000 VIBE = 1 AMD GPU Hour).`,
       provider: "DEMO" as const,
       attribution: null,
     };

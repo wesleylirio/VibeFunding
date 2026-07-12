@@ -314,7 +314,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
     .run();
 
   // MVP: investors fund with VIBE only; AMD GPU Hours track converted compute.
-  // 50 VIBE = 1 AMD GPU Hour.
+  // Demo rate: 1,000 VIBE = 1 AMD GPU Hour.
   const resources = [
     {
       id: "res-cm-vibe",
@@ -329,8 +329,8 @@ export async function seedDatabase(options?: { force?: boolean }) {
       id: "res-cm-gpu",
       buildRoundId: "round-collabmesh-presence",
       type: "AMD_GPU_HOURS" as const,
-      targetAmount: 300, // 15000 / 50
-      fundedAmount: 204, // 10200 / 50
+      targetAmount: 15,
+      fundedAmount: 10.2,
       unit: "hours",
       label: "AMD GPU Hours (from VIBE)",
     },
@@ -347,8 +347,8 @@ export async function seedDatabase(options?: { force?: boolean }) {
       id: "res-il-gpu",
       buildRoundId: "round-inferlane-batch",
       type: "AMD_GPU_HOURS" as const,
-      targetAmount: 200,
-      fundedAmount: 80,
+      targetAmount: 10,
+      fundedAmount: 4,
       unit: "hours",
       label: "AMD GPU Hours (from VIBE)",
     },
@@ -365,8 +365,8 @@ export async function seedDatabase(options?: { force?: boolean }) {
       id: "res-af-gpu",
       buildRoundId: "round-auditforge-packs",
       type: "AMD_GPU_HOURS" as const,
-      targetAmount: 140,
-      fundedAmount: 42,
+      targetAmount: 7,
+      fundedAmount: 2.1,
       unit: "hours",
       label: "AMD GPU Hours (from VIBE)",
     },
@@ -386,8 +386,8 @@ export async function seedDatabase(options?: { force?: boolean }) {
       id: `res-${r.id}-gpu`,
       buildRoundId: r.id,
       type: "AMD_GPU_HOURS" as const,
-      targetAmount: Math.round(r.targetValue / 50),
-      fundedAmount: Math.round(r.fundedValue / 50),
+      targetAmount: Math.round((r.targetValue / 1000) * 100) / 100,
+      fundedAmount: Math.round((r.fundedValue / 1000) * 100) / 100,
       unit: "hours",
       label: "AMD GPU Hours (from VIBE)",
     });
@@ -519,19 +519,6 @@ export async function seedDatabase(options?: { force?: boolean }) {
         updatedAt: daysAgo(55),
       },
       {
-        id: "hold-lane-seed",
-        investorId: INVESTOR_ID,
-        projectId: "proj-inferlane",
-        assetType: "PROJECT_TOKEN",
-        assetSymbol: "LANE",
-        assetName: "InferLane Token",
-        amount: 1100,
-        simulatedValue: 1320,
-        metadata: JSON.stringify({ source: "Early allocation" }),
-        createdAt: daysAgo(20),
-        updatedAt: daysAgo(20),
-      },
-      {
         id: "hold-nft-cm",
         investorId: INVESTOR_ID,
         projectId: "proj-collabmesh",
@@ -563,21 +550,6 @@ export async function seedDatabase(options?: { force?: boolean }) {
         settlementStatus: "IMMEDIATE",
         verifiedAt: daysAgo(55),
         createdAt: daysAgo(55),
-      },
-      {
-        id: "alloc-seed-il",
-        investorId: INVESTOR_ID,
-        buildRoundId: "round-inferlane-batch",
-        projectId: "proj-inferlane",
-        resourceType: "VIBE",
-        amount: 1000,
-        normalizedValue: 1000,
-        buildUnits: 1000,
-        rewardTokens: 1100,
-        rewardNftId: null,
-        settlementStatus: "IMMEDIATE",
-        verifiedAt: daysAgo(20),
-        createdAt: daysAgo(20),
       },
     ])
     .run();
@@ -1090,7 +1062,7 @@ function buildCommunitySeed() {
         projectId: p.id,
         authorName: "Alex Rivera",
         authorRole: "INVESTOR",
-        body: `Invested VIBE into the current Build Round (50 VIBE = 1 AMD GPU Hour). Watching how ${p.name} turns compute into verified work.`,
+        body: `Invested VIBE into the current Build Round (demo rate: 1,000 VIBE = 1 AMD GPU Hour). Watching how ${p.name} turns compute into verified work.`,
         buildRoundId: extra.roundId,
         proofId: null,
         agentRunId: null,
@@ -1189,7 +1161,7 @@ function buildCommunitySeed() {
         projectId: p.id,
         authorName: teamName,
         authorRole: "TEAM",
-        body: `Team update: active Build Round is open for VIBE. Contributions convert to AMD GPU Cloud Credits (50 VIBE = 1 AMD GPU Hour) so agents can keep moving on ${p.category.toLowerCase()} work.`,
+        body: `Team update: the active Build Round is open for VIBE. Contributions allocate AMD GPU Cloud Credits so agents can keep moving on ${p.category.toLowerCase()} work.`,
         buildRoundId: roundId,
         proofId: null,
         agentRunId: null,
@@ -1241,5 +1213,3 @@ function buildCommunitySeed() {
 export async function resetDemo() {
   return seedDatabase({ force: true });
 }
-
-

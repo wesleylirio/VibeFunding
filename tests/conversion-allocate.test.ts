@@ -18,14 +18,14 @@ describe("VIBE → AMD GPU conversion (MVP)", () => {
   });
 
   it("converts VIBE to AMD GPU Hours at fixed rate", () => {
-    expect(VIBE_PER_AMD_GPU_HOUR).toBe(50);
-    expect(vibeToAmdGpuHours(50)).toBe(1);
-    expect(vibeToAmdGpuHours(1000)).toBe(20);
-    expect(formatAmdGpuHours(20)).toMatch(/20/);
+    expect(VIBE_PER_AMD_GPU_HOUR).toBe(1000);
+    expect(vibeToAmdGpuHours(1000)).toBe(1);
+    expect(vibeToAmdGpuHours(5000)).toBe(5);
+    expect(formatAmdGpuHours(5)).toMatch(/5/);
   });
 
   it("estimates MESH from Build Units and shows AMD credits", () => {
-    // 1000 VIBE → 1000 BU → 800 MESH → 20 AMD GPU Hours
+    // 1000 VIBE → 1000 BU → 800 MESH → 1 AMD GPU Hour
     expect(estimateProjectTokens("proj-collabmesh", 1000)).toBe(800);
     const preview = previewAllocation({
       projectId: "proj-collabmesh",
@@ -34,9 +34,9 @@ describe("VIBE → AMD GPU conversion (MVP)", () => {
     });
     expect(preview.buildUnits).toBe(1000);
     expect(preview.estimatedTokens).toBe(800);
-    expect(preview.amdGpuHours).toBe(20);
+    expect(preview.amdGpuHours).toBe(1);
     expect(preview.requiresVerification).toBe(false);
-    expect(preview.conversionLabel).toContain("50 VIBE");
+    expect(preview.conversionLabel).toContain("1,000 VIBE");
   });
 });
 
@@ -92,7 +92,7 @@ describe("allocation settlement", () => {
     expect(result.settlementStatus).toBe("IMMEDIATE");
     expect(result.tokensReleased).toBe(400); // 500 BU * 0.8
     expect(result.requiresVerification).toBe(false);
-    expect(result.amdGpuHours).toBe(10); // 500 / 50
+    expect(result.amdGpuHours).toBe(0.5); // 500 / 1000
     const after = await getPortfolio(INVESTOR_ID);
     expect(after.vibeBalance).toBe(before.vibeBalance - 500);
   });

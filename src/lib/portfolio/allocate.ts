@@ -157,7 +157,7 @@ export async function allocateToRound(input: AllocateInput) {
 
   if (input.resourceType !== "VIBE") {
     throw new Error(
-      "Contribute with VIBE. VIBE converts to AMD GPU Cloud Credits (50 VIBE = 1 AMD GPU Hour)."
+      "Contribute with VIBE. VIBE converts to AMD GPU Cloud Credits (demo rate: 1,000 VIBE = 1 AMD GPU Hour)."
     );
   }
 

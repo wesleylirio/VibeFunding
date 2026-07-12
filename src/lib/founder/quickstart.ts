@@ -84,7 +84,7 @@ export function generateQuickstartDraft(input: QuickstartInput): QuickstartDraft
   ];
 
   const vibeTarget = 8000;
-  const gpuHours = vibeTarget / 50; // 50 VIBE = 1 AMD GPU Hour
+  const gpuHours = vibeTarget / 1000; // demo rate
   const estimatedBuildUnits = vibeTarget;
 
   return {
@@ -151,8 +151,8 @@ export function generateQuickstartDraft(input: QuickstartInput): QuickstartDraft
       name: `${name} Builder Pass`,
       utility: ["Early product access", "Community badge", "Update priority"],
     },
-    investorSummary: `${name} is raising VIBE to fund AMD GPU Cloud Credits for ${objective}. Contributors receive ${symbol} based on Build Units. 50 VIBE = 1 AMD GPU Hour.`,
-    onePaper: `# ${name} One-Paper\n\n## Pitch\n${pitch}\n\n## Problem\nBuilders need transparent VIBE → AMD GPU compute funding.\n\n## Solution\n${base}\n\n## Stage\n${stage}\n\n## Build Round\n${objective}\n\n## Resources\nVIBE → AMD GPU Cloud Credits (50 VIBE = 1 AMD GPU Hour)\n\n## Returns\n${symbol} Project Tokens + access NFT\n\n## Evidence\n${input.evidence || "To be expanded"}\n`,
+    investorSummary: `${name} is raising VIBE to fund AMD GPU Cloud Credits for ${objective}. Contributors receive ${symbol} based on Build Units. Demo rate: 1,000 VIBE = 1 AMD GPU Hour.`,
+    onePaper: `# ${name} One-Paper\n\n## Pitch\n${pitch}\n\n## Problem\nBuilders need transparent VIBE → AMD GPU compute funding.\n\n## Solution\n${base}\n\n## Stage\n${stage}\n\n## Build Round\n${objective}\n\n## Resources\nVIBE → AMD GPU Cloud Credits (demo rate: 1,000 VIBE = 1 AMD GPU Hour)\n\n## Returns\n${symbol} Project Tokens + access NFT\n\n## Evidence\n${input.evidence || "To be expanded"}\n`,
   };
 }
 

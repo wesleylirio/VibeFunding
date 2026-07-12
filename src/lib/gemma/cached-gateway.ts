@@ -37,6 +37,7 @@ export class CachedGemmaGateway implements GemmaGateway {
 
   async analyzePortfolio(input: {
     investorId: string;
+    displayName?: string;
   }): Promise<GemmaInsight> {
     const insight = await this.inner.analyzePortfolio(input);
     return {

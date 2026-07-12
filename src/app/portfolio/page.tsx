@@ -139,7 +139,7 @@ export default async function PortfolioPage() {
                     <Link href="/discover" className="text-accent hover:underline">
                       Invest VIBE from Discover
                     </Link>{" "}
-                    (50 VIBE = 1 AMD GPU Hour).
+                    (demo rate: 1,000 VIBE = 1 AMD GPU Hour).
                   </p>
                 ) : (
                   portfolio.tokenHoldings.map((h) => (
