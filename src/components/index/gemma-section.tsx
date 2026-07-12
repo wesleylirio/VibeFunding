@@ -21,10 +21,7 @@ export function GemmaSection() {
           <Reveal delay={0.05}>
             <SectionEyebrow>Your AI investment guide</SectionEyebrow>
             <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight md:text-4xl">
-              Meet{" "}
-              <span className="bg-[var(--vf-gradient-gemma)] bg-clip-text text-transparent">
-                Gemma
-              </span>
+              Meet Gemma
             </h2>
           </Reveal>
           <Reveal delay={0.12}>
