@@ -117,11 +117,11 @@ export default async function ActivityPage() {
                 <Legend icon={<Sparkles className="h-4 w-4" />} label="Gemma explains what changed" />
               </CardContent>
             </Card>
-            <Link href="/gemma" className="block rounded-2xl border border-gemma/30 bg-gemma/5 p-5 hover:bg-gemma/10">
-              <div className="text-xs font-semibold uppercase tracking-wide text-gemma">Ask Gemma</div>
-              <div className="mt-2 font-medium">What changed in my portfolio?</div>
-              <p className="mt-1 text-sm text-muted-foreground">Turn this event trail into a decision-ready briefing.</p>
-            </Link>
+            <div className="rounded-2xl border border-gemma/30 bg-gemma/5 p-5">
+              <div className="text-xs font-semibold uppercase tracking-wide text-gemma">Gemma context</div>
+              <div className="mt-2 font-medium">Ask from the floating assistant</div>
+              <p className="mt-1 text-sm text-muted-foreground">Gemma reads this activity trail without leaving the page.</p>
+            </div>
           </div>
         </div>
       </div>

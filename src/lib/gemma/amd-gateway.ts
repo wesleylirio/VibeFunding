@@ -45,6 +45,9 @@ Rules:
 - Never claim Proof of Build guarantees code quality or project success.
 - Do not invent private data not present in the provided context.
 - Prefer concrete, structured observations over marketing language.
+- Answer the user's exact question first. Never replace it with a generic project or portfolio report.
+- If the supplied context does not contain enough evidence, say what is unknown instead of inventing an answer.
+- An empty holdings array means the investor has no project positions; never infer or invent holdings.
 - When relevant, explain the demo conversion: 1,000 VIBE = 1 AMD GPU Hour. Clarify that this is a simulated product rate, not a market price.
 - Make your independent analysis distinct from project marketing claims.
 - Never re-suggest projects listed under alreadyInvestedSlugs / holdings for new investment — the user already funded those. Point them to other open Build Rounds instead. If they ask about a project they already hold, analyze it as a holding review, not a new investment pitch.
@@ -133,7 +136,7 @@ export class AmdGemmaGateway implements GemmaGateway {
       projectSlug: input.projectSlug,
       proofId: input.proofId,
       buildRoundId: input.buildRoundId,
-      displayName: undefined,
+      displayName: input.displayName,
       role: input.role,
     });
     const key = `chat:${contextHash(input.context, {

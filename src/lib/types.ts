@@ -51,6 +51,7 @@ export interface GemmaChatInput {
   proofId?: string;
   buildRoundId?: string;
   role?: DemoRole;
+  displayName?: string;
 }
 
 export interface GemmaResponse {
