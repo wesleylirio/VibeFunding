@@ -20,7 +20,7 @@ export async function POST(
     const { id } = await context.params;
     const body = schema.parse(await request.json());
     const session = await getDemoSession();
-    const result = allocateToRound({
+    const result = await allocateToRound({
       investorId: INVESTOR_ID,
       buildRoundId: id,
       resourceType: "VIBE",

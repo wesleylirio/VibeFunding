@@ -24,6 +24,9 @@ function contextFromPath(pathname: string): {
   if (pathname.startsWith("/portfolio")) {
     return { context: "INVESTOR_PORTFOLIO" };
   }
+  if (pathname.startsWith("/gemma")) {
+    return { context: "INVESTOR_PORTFOLIO" };
+  }
   if (pathname.startsWith("/proofs/")) {
     return {
       context: "PROOF_OF_BUILD",

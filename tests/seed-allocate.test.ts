@@ -57,7 +57,7 @@ describe("seed and allocate", () => {
 
   it("persists allocation and holdings", async () => {
     const before = await getPortfolio(INVESTOR_ID);
-    const result = allocateToRound({
+    const result = await allocateToRound({
       investorId: INVESTOR_ID,
       buildRoundId: "round-collabmesh-presence",
       resourceType: "VIBE",
@@ -71,8 +71,8 @@ describe("seed and allocate", () => {
     expect(after.allocations.length).toBeGreaterThan(before.allocations.length);
   });
 
-  it("creates a real first Proof for a project that has none", () => {
-    const result = allocateToRound({
+  it("creates a real first Proof for a project that has none", async () => {
+    const result = await allocateToRound({
       investorId: INVESTOR_ID,
       buildRoundId: "round-auditforge-packs",
       resourceType: "VIBE",

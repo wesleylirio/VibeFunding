@@ -275,7 +275,7 @@ Guidelines:
   }
 
   async analyzePortfolio(input: PortfolioAnalysisInput): Promise<GemmaInsight> {
-    const ctx = buildPortfolioContext({ investorId: input.investorId });
+    const ctx = await buildPortfolioContext({ investorId: input.investorId });
     if (!this.configured) return this.fallback.analyzePortfolio(input);
 
     const key = `portfolio:${contextHash("INVESTOR_PORTFOLIO", ctx)}`;

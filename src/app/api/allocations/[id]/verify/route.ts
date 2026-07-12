@@ -9,7 +9,7 @@ export async function POST(
 ) {
   try {
     const { id } = await context.params;
-    const result = verifyContribution(id);
+    const result = await verifyContribution(id);
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     return NextResponse.json(

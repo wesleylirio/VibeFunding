@@ -26,10 +26,14 @@ export async function POST(request: Request) {
     const role = "INVESTOR" as const;
     await switchDemoRole(role);
 
+    const enteredName = body.displayName.trim();
+    const displayName = /[\p{L}\p{N}]/u.test(enteredName)
+      ? enteredName
+      : "Investor";
     const session = {
       loggedIn: true,
-      displayName: body.displayName.trim(),
-      initials: initialsFromName(body.displayName),
+      displayName,
+      initials: initialsFromName(displayName),
       role,
       onboardingSeen: false,
       founderQuickstartSeen: false,

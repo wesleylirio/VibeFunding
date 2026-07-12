@@ -28,7 +28,7 @@ export type AllocateInput = {
   amount: number;
 };
 
-function creditProjectTokens(input: {
+async function creditProjectTokens(input: {
   investorId: string;
   projectId: string;
   tokenSymbol: string;
@@ -37,7 +37,7 @@ function creditProjectTokens(input: {
   createdAt: string;
 }) {
   const db = getDb();
-  const existing = db
+  const existing = await db
     .select()
     .from(holdings)
     .where(
@@ -51,7 +51,7 @@ function creditProjectTokens(input: {
     .get();
 
   if (existing) {
-    db.update(holdings)
+    await db.update(holdings)
       .set({
         amount: existing.amount + input.amount,
         simulatedValue:
@@ -61,7 +61,7 @@ function creditProjectTokens(input: {
       .where(eq(holdings.id, existing.id))
       .run();
   } else {
-    db.insert(holdings)
+    await db.insert(holdings)
       .values({
         id: `hold-${nanoid(10)}`,
         investorId: input.investorId,
@@ -79,7 +79,7 @@ function creditProjectTokens(input: {
   }
 }
 
-function creditNft(input: {
+async function creditNft(input: {
   investorId: string;
   projectId: string;
   tokenSymbol: string | null | undefined;
@@ -87,7 +87,7 @@ function creditNft(input: {
   createdAt: string;
 }) {
   const db = getDb();
-  const existingNft = db
+  const existingNft = await db
     .select()
     .from(holdings)
     .where(
@@ -100,8 +100,8 @@ function creditNft(input: {
     .get();
   if (existingNft) return;
 
-  const nft = db.select().from(nfts).where(eq(nfts.id, input.rewardNftId)).get();
-  db.insert(holdings)
+  const nft = await db.select().from(nfts).where(eq(nfts.id, input.rewardNftId)).get();
+  await db.insert(holdings)
     .values({
       id: `hold-${nanoid(10)}`,
       investorId: input.investorId,
@@ -123,15 +123,15 @@ function creditNft(input: {
     .run();
 }
 
-export function allocateToRound(input: AllocateInput) {
-  ensureSeeded();
+export async function allocateToRound(input: AllocateInput) {
+  await ensureSeeded();
   const db = getDb();
 
   if (!Number.isFinite(input.amount) || input.amount <= 0) {
     throw new Error("Amount must be a positive number.");
   }
 
-  const round = db
+  const round = await db
     .select()
     .from(buildRounds)
     .where(eq(buildRounds.id, input.buildRoundId))
@@ -141,14 +141,14 @@ export function allocateToRound(input: AllocateInput) {
     throw new Error("This Build Round is not open for allocations.");
   }
 
-  const project = db
+  const project = await db
     .select()
     .from(projects)
     .where(eq(projects.id, round.projectId))
     .get();
   if (!project) throw new Error("Project not found.");
 
-  const investor = db
+  const investor = await db
     .select()
     .from(users)
     .where(eq(users.id, input.investorId))
@@ -171,7 +171,7 @@ export function allocateToRound(input: AllocateInput) {
 
   // Debit VIBE balance
   {
-    const vibeHolding = db
+    const vibeHolding = await db
       .select()
       .from(holdings)
       .where(
@@ -186,7 +186,7 @@ export function allocateToRound(input: AllocateInput) {
       throw new Error("Insufficient VIBE balance.");
     }
     if (vibeHolding) {
-      db.update(holdings)
+      await db.update(holdings)
         .set({
           amount: vibeHolding.amount - input.amount,
           simulatedValue:
@@ -196,7 +196,7 @@ export function allocateToRound(input: AllocateInput) {
         .where(eq(holdings.id, vibeHolding.id))
         .run();
     }
-    db.update(users)
+    await db.update(users)
       .set({ vibeBalance: Math.max(0, investor.vibeBalance - input.amount) })
       .where(eq(users.id, input.investorId))
       .run();
@@ -204,7 +204,7 @@ export function allocateToRound(input: AllocateInput) {
 
   let rewardNftId: string | null = null;
   if (preview.nftEligible) {
-    const nft = db
+    const nft = await db
       .select()
       .from(nfts)
       .where(eq(nfts.projectId, project.id))
@@ -219,7 +219,7 @@ export function allocateToRound(input: AllocateInput) {
     ? "IMMEDIATE"
     : "PENDING_VERIFICATION";
 
-  db.insert(allocations)
+  await db.insert(allocations)
     .values({
       id: allocationId,
       investorId: input.investorId,
@@ -238,7 +238,7 @@ export function allocateToRound(input: AllocateInput) {
     .run();
 
   // Progress Build Round by Build Units
-  db.update(buildRounds)
+  await db.update(buildRounds)
     .set({
       fundedValue: round.fundedValue + preview.buildUnits,
       status:
@@ -252,7 +252,7 @@ export function allocateToRound(input: AllocateInput) {
     .run();
 
   // Credit VIBE requirement and AMD GPU Hours requirement (via conversion)
-  const vibeReq = db
+  const vibeReq = await db
     .select()
     .from(resourceRequirements)
     .where(
@@ -263,12 +263,12 @@ export function allocateToRound(input: AllocateInput) {
     )
     .get();
   if (vibeReq) {
-    db.update(resourceRequirements)
+    await db.update(resourceRequirements)
       .set({ fundedAmount: vibeReq.fundedAmount + input.amount })
       .where(eq(resourceRequirements.id, vibeReq.id))
       .run();
   }
-  const gpuReq = db
+  const gpuReq = await db
     .select()
     .from(resourceRequirements)
     .where(
@@ -279,7 +279,7 @@ export function allocateToRound(input: AllocateInput) {
     )
     .get();
   if (gpuReq && amdGpuHours > 0) {
-    db.update(resourceRequirements)
+    await db.update(resourceRequirements)
       .set({ fundedAmount: gpuReq.fundedAmount + amdGpuHours })
       .where(eq(resourceRequirements.id, gpuReq.id))
       .run();
@@ -290,7 +290,7 @@ export function allocateToRound(input: AllocateInput) {
 
   // Immediate settlement: credit tokens + NFT now
   if (immediate && preview.estimatedTokens > 0 && project.tokenSymbol) {
-    creditProjectTokens({
+    await creditProjectTokens({
       investorId: input.investorId,
       projectId: project.id,
       tokenSymbol: project.tokenSymbol,
@@ -302,7 +302,7 @@ export function allocateToRound(input: AllocateInput) {
   }
 
   if (immediate && rewardNftId) {
-    creditNft({
+    await creditNft({
       investorId: input.investorId,
       projectId: project.id,
       tokenSymbol: project.tokenSymbol,
@@ -315,7 +315,7 @@ export function allocateToRound(input: AllocateInput) {
   // Fetch NFT details for reward UX
   let nftDetails = null;
   if (rewardNftId) {
-    const nft = db.select().from(nfts).where(eq(nfts.id, rewardNftId)).get();
+    const nft = await db.select().from(nfts).where(eq(nfts.id, rewardNftId)).get();
     if (nft) {
       nftDetails = {
         id: nft.id,
@@ -331,7 +331,18 @@ export function allocateToRound(input: AllocateInput) {
 
   // A startup's first allocation must create a real replayable Proof before
   // the client navigates to it. Existing projects reuse their latest Proof.
-  const proof = ensureFirstProofForBuildRound(round.id);
+  const proof = await ensureFirstProofForBuildRound(round.id);
+
+  const updatedVibeHolding = await db
+    .select()
+    .from(holdings)
+    .where(
+      and(
+        eq(holdings.investorId, input.investorId),
+        eq(holdings.assetType, "VIBE")
+      )
+    )
+    .get();
 
   return {
     allocationId,
@@ -352,17 +363,7 @@ export function allocateToRound(input: AllocateInput) {
     resourceLabel: conversion.label,
     unitLabel: conversion.unitLabel,
     amount: input.amount,
-    vibeBalance:
-      db
-        .select()
-        .from(holdings)
-        .where(
-          and(
-            eq(holdings.investorId, input.investorId),
-            eq(holdings.assetType, "VIBE")
-          )
-        )
-        .get()?.amount ?? 0,
+    vibeBalance: updatedVibeHolding?.amount ?? 0,
   };
 }
 
@@ -370,10 +371,10 @@ export function allocateToRound(input: AllocateInput) {
  * Verify a pending productive contribution and release Project Tokens.
  * Controlled action for Demo Mode; models real verification pipeline.
  */
-export function verifyContribution(allocationId: string) {
-  ensureSeeded();
+export async function verifyContribution(allocationId: string) {
+  await ensureSeeded();
   const db = getDb();
-  const allocation = db
+  const allocation = await db
     .select()
     .from(allocations)
     .where(eq(allocations.id, allocationId))
@@ -383,7 +384,7 @@ export function verifyContribution(allocationId: string) {
     throw new Error("Only pending contributions can be verified.");
   }
 
-  const project = db
+  const project = await db
     .select()
     .from(projects)
     .where(eq(projects.id, allocation.projectId))
@@ -393,7 +394,7 @@ export function verifyContribution(allocationId: string) {
   const createdAt = nowIso();
 
   if (allocation.rewardTokens > 0 && project.tokenSymbol) {
-    creditProjectTokens({
+    await creditProjectTokens({
       investorId: allocation.investorId,
       projectId: project.id,
       tokenSymbol: project.tokenSymbol,
@@ -405,7 +406,7 @@ export function verifyContribution(allocationId: string) {
 
   let nftReleased = false;
   if (allocation.rewardNftId) {
-    creditNft({
+    await creditNft({
       investorId: allocation.investorId,
       projectId: project.id,
       tokenSymbol: project.tokenSymbol,
@@ -415,7 +416,7 @@ export function verifyContribution(allocationId: string) {
     nftReleased = true;
   }
 
-  db.update(allocations)
+  await db.update(allocations)
     .set({
       settlementStatus: "REWARD_RELEASED",
       verifiedAt: createdAt,
@@ -433,8 +434,8 @@ export function verifyContribution(allocationId: string) {
   };
 }
 
-export function getAllocationById(id: string) {
-  ensureSeeded();
+export async function getAllocationById(id: string) {
+  await ensureSeeded();
   const db = getDb();
-  return db.select().from(allocations).where(eq(allocations.id, id)).get();
+  return await db.select().from(allocations).where(eq(allocations.id, id)).get();
 }

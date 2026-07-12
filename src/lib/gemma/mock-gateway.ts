@@ -257,26 +257,6 @@ What would you like to examine?`;
   async analyzePortfolio(input?: { investorId: string }): Promise<GemmaInsight> {
     await ensureSeeded();
     const investorId = input?.investorId || "user-investor-demo";
-    const db = getDb();
-    const cached = db
-      .select()
-      .from(gemmaInsights)
-      .where(eq(gemmaInsights.context, "INVESTOR_PORTFOLIO"))
-      .get();
-    if (cached) {
-      return {
-        title: cached.title,
-        summary: cached.summary,
-        risks: JSON.parse(cached.risks) as string[],
-        strengths: JSON.parse(cached.strengths) as string[],
-        questions: JSON.parse(cached.questions) as string[],
-        portfolioImpact: cached.portfolioImpact ?? undefined,
-        sources: JSON.parse(cached.sources) as string[],
-        generatedAt: cached.generatedAt,
-        provider: cached.provider as GemmaInsight["provider"],
-      };
-    }
-
     const portfolio = await getPortfolio(investorId);
     const tokens = portfolio.tokenHoldings;
     const nfts = portfolio.nftHoldings;

@@ -83,7 +83,7 @@ describe("allocation settlement", () => {
 
   it("settles VIBE immediately with tokens and AMD GPU hours", async () => {
     const before = await getPortfolio(INVESTOR_ID);
-    const result = allocateToRound({
+    const result = await allocateToRound({
       investorId: INVESTOR_ID,
       buildRoundId: "round-collabmesh-presence",
       resourceType: "VIBE",
@@ -97,42 +97,42 @@ describe("allocation settlement", () => {
     expect(after.vibeBalance).toBe(before.vibeBalance - 500);
   });
 
-  it("rejects non-VIBE contributions", () => {
-    expect(() =>
+  it("rejects non-VIBE contributions", async () => {
+    await expect(
       allocateToRound({
         investorId: INVESTOR_ID,
         buildRoundId: "round-collabmesh-presence",
         resourceType: "AGENT_HOURS",
         amount: 10,
       })
-    ).toThrow(/Contribute with VIBE/i);
+    ).rejects.toThrow(/Contribute with VIBE/i);
   });
 
-  it("rejects excessive VIBE amount", () => {
-    expect(() =>
+  it("rejects excessive VIBE amount", async () => {
+    await expect(
       allocateToRound({
         investorId: INVESTOR_ID,
         buildRoundId: "round-collabmesh-presence",
         resourceType: "VIBE",
         amount: 999_999_999,
       })
-    ).toThrow(/Insufficient/);
+    ).rejects.toThrow(/Insufficient/);
   });
 
-  it("rejects invalid amounts", () => {
-    expect(() =>
+  it("rejects invalid amounts", async () => {
+    await expect(
       allocateToRound({
         investorId: INVESTOR_ID,
         buildRoundId: "round-collabmesh-presence",
         resourceType: "VIBE",
         amount: 0,
       })
-    ).toThrow(/positive/);
+    ).rejects.toThrow(/positive/);
   });
 
   it("grants NFT at liquid threshold", async () => {
     await resetDemo();
-    const result = allocateToRound({
+    const result = await allocateToRound({
       investorId: INVESTOR_ID,
       buildRoundId: "round-collabmesh-presence",
       resourceType: "VIBE",

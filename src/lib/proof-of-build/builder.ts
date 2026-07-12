@@ -22,17 +22,17 @@ function sha256(input: string) {
  * have a Proof yet. The run is persisted before the Proof so every redirect
  * always points at a real, replayable database record.
  */
-export function ensureFirstProofForBuildRound(buildRoundId: string) {
-  ensureSeeded();
+export async function ensureFirstProofForBuildRound(buildRoundId: string) {
+  await ensureSeeded();
   const db = getDb();
-  const round = db
+  const round = await db
     .select()
     .from(buildRounds)
     .where(eq(buildRounds.id, buildRoundId))
     .get();
   if (!round) throw new Error("Build Round not found");
 
-  const existing = db
+  const existing = await db
     .select()
     .from(proofsOfBuild)
     .where(eq(proofsOfBuild.projectId, round.projectId))
@@ -40,7 +40,7 @@ export function ensureFirstProofForBuildRound(buildRoundId: string) {
     .get();
   if (existing) return existing;
 
-  const project = db
+  const project = await db
     .select()
     .from(projects)
     .where(eq(projects.id, round.projectId))
@@ -53,7 +53,7 @@ export function ensureFirstProofForBuildRound(buildRoundId: string) {
   const taskDescription = round.objective;
   const commitHash = sha256(`${runId}:${project.slug}`).slice(0, 20);
 
-  db.insert(agentRuns)
+  await db.insert(agentRuns)
     .values({
       id: runId,
       projectId: project.id,
@@ -98,7 +98,7 @@ export function ensureFirstProofForBuildRound(buildRoundId: string) {
     ["RUN_COMPLETED", "Milestone completed", "The funded execution completed and produced a Proof of Build."],
   ] as const;
 
-  db.insert(agentEvents)
+  await db.insert(agentEvents)
     .values(
       events.map(([type, title, publicMessage], index) => ({
         id: `${runId}-evt-${index + 1}`,
@@ -114,26 +114,26 @@ export function ensureFirstProofForBuildRound(buildRoundId: string) {
     )
     .run();
 
-  return buildProofFromRun(runId);
+  return await buildProofFromRun(runId);
 }
 
-export function buildProofFromRun(runId: string) {
-  ensureSeeded();
+export async function buildProofFromRun(runId: string) {
+  await ensureSeeded();
   const db = getDb();
-  const run = db.select().from(agentRuns).where(eq(agentRuns.id, runId)).get();
+  const run = await db.select().from(agentRuns).where(eq(agentRuns.id, runId)).get();
   if (!run) throw new Error("Agent run not found");
   if (run.status !== "COMPLETED") {
     throw new Error("Only completed runs can produce a Proof of Build");
   }
 
-  const existing = db
+  const existing = await db
     .select()
     .from(proofsOfBuild)
     .where(eq(proofsOfBuild.agentRunId, runId))
     .get();
   if (existing) return existing;
 
-  const project = db
+  const project = await db
     .select()
     .from(projects)
     .where(eq(projects.id, run.projectId))
@@ -216,7 +216,7 @@ export function buildProofFromRun(runId: string) {
   const proofId = `proof-${nanoid(10)}`;
   const createdAt = nowIso();
 
-  db.insert(proofsOfBuild)
+  await db.insert(proofsOfBuild)
     .values({
       id: proofId,
       projectId: run.projectId,
@@ -251,7 +251,7 @@ export function buildProofFromRun(runId: string) {
     })
     .run();
 
-  db.insert(proofArtifacts)
+  await db.insert(proofArtifacts)
     .values(
       artifacts.map((a, i) => ({
         id: `art-${nanoid(8)}-${i}`,
@@ -267,5 +267,5 @@ export function buildProofFromRun(runId: string) {
     )
     .run();
 
-  return db.select().from(proofsOfBuild).where(eq(proofsOfBuild.id, proofId)).get()!;
+  return (await db.select().from(proofsOfBuild).where(eq(proofsOfBuild.id, proofId)).get())!;
 }
