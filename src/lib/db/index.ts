@@ -496,14 +496,8 @@ CREATE TABLE IF NOT EXISTS community_reactions (
 
 export async function ensureSchemaRemote() {
   const client = getTursoClient();
-  for (const stmt of SCHEMA_SQL_PART1.split(");").filter(Boolean)) {
-    const sql = stmt.trim() + ");";
-    if (sql.length > 5) await client.execute(sql);
-  }
-  for (const stmt of SCHEMA_SQL_PART2.split(");").filter(Boolean)) {
-    const sql = stmt.trim() + ");";
-    if (sql.length > 5) await client.execute(sql);
-  }
+  await client.executeMultiple(SCHEMA_SQL_PART1 + ";");
+  await client.executeMultiple(SCHEMA_SQL_PART2 + ";");
 }
 
 export function getDb() {
