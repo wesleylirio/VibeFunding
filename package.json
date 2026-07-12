@@ -14,9 +14,7 @@
     "seed:reset": "tsx scripts/reset-demo.ts",
     "demo:reset": "tsx scripts/reset-demo.ts",
     "db:reset": "tsx scripts/reset-demo.ts",
-    "probe:fireworks": "tsx scripts/fireworks/probe-fireworks.ts",
-    "demo:tts": "node scripts/demo-record/generate-tts.mjs",
-    "demo:record": "node scripts/demo-record/record-demo.mjs"
+    "probe:fireworks": "tsx scripts/fireworks/probe-fireworks.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",

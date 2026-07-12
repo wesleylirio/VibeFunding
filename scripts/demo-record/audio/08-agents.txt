@@ -1,1 +1,0 @@
-After investing, I watch a recorded agent execution. Compute is labeled honestly as a demonstration replay with tests and artifacts.

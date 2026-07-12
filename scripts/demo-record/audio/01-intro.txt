@@ -1,1 +1,0 @@
-VibeFunding is a web3 launchpad for agentic startups. Investors contribute VIBE, which converts into AMD GPU Cloud Credits that fund real agent work.

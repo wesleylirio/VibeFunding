@@ -1,1 +1,0 @@
-CollabMesh is multiplayer infrastructure for agentic developer tools. The current opportunity is a funded Build Round with clear deliverables.

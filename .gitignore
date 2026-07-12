@@ -51,8 +51,6 @@ next-env.d.ts
 # docker temp
 vibefunding-tmp
 
-# generated demo audio (regenerate with npm run demo:tts)
-/scripts/demo-record/audio/*.mp3
 
 # optional local submission dumps
 /docs/submission/
