@@ -264,6 +264,26 @@ What would you like to examine?`;
     const topCategory = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
     const categories = Object.keys(byCategory);
 
+    if (tokens.length === 0 && portfolio.allocations.length === 0) {
+      return baseInsight({
+        title: "Your portfolio starts with a decision",
+        summary: `You have ${portfolio.vibeBalance.toLocaleString()} VIBE available and no project positions yet. Nothing is at risk or concentrated. Start by defining your preferred stage, categories, and risk tolerance, then compare projects by Build Round clarity and Proof of Build evidence.`,
+        strengths: [
+          "Full liquidity available",
+          "No concentration risk yet",
+          "Freedom to build a deliberate first position",
+        ],
+        risks: [],
+        questions: [
+          "Which startup stage matches your risk tolerance?",
+          "Which categories do you understand well enough to evaluate?",
+          "How much VIBE should a first position use?",
+        ],
+        sources: ["wallet", "investor preferences"],
+        provider: "DEMO",
+      });
+    }
+
     const dynamicStrengths: string[] = [];
     if (tokens.length > 0) {
       dynamicStrengths.push(`${tokens.length} project token position${tokens.length === 1 ? "" : "s"}`);

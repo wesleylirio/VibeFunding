@@ -48,11 +48,12 @@ describe("seed and allocate", () => {
     }
   });
 
-  it("seeds investor and projects", async () => {
+  it("seeds a liquid investor with no project positions", async () => {
     const portfolio = await getPortfolio(INVESTOR_ID);
     expect(portfolio.investor?.name).toBeTruthy();
     expect(portfolio.vibeBalance).toBeGreaterThan(0);
-    expect(portfolio.tokenHoldings.length).toBeGreaterThan(0);
+    expect(portfolio.tokenHoldings.length).toBe(0);
+    expect(portfolio.allocations.length).toBe(0);
   });
 
   it("persists allocation and holdings", async () => {

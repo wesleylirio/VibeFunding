@@ -41,6 +41,51 @@ export default async function PortfolioPage() {
     (a) => a.settlementStatus === "PENDING_VERIFICATION"
   );
 
+  if (portfolio.investedProjectCount === 0) {
+    return (
+      <AppShell
+        role={juror.role}
+        userName={juror.displayName}
+        initials={juror.initials}
+        title="Portfolio"
+        vibeBalance={portfolio.vibeBalance}
+      >
+        <div className="mx-auto max-w-4xl space-y-6">
+          <section className="card-surface card-glow overflow-hidden p-7 text-center md:p-12">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gemma/10 text-2xl text-gemma">
+              ◇
+            </div>
+            <div className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-gemma">
+              Ready for your first position
+            </div>
+            <h1 className="mx-auto mt-2 max-w-xl font-display text-3xl font-semibold tracking-tight md:text-4xl">
+              Your portfolio is intentionally empty
+            </h1>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+              You have {formatNumber(portfolio.vibeBalance)} VIBE available. Explore
+              Build Rounds, use Gemma to compare fit and evidence, then choose the
+              first project you want to help build.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Link href="/discover" className="inline-flex h-11 items-center rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground">
+                Discover opportunities
+              </Link>
+              <Link href="/gemma" className="inline-flex h-11 items-center rounded-xl border border-gemma/30 bg-gemma/5 px-5 text-sm font-semibold text-gemma">
+                Ask Gemma for guidance
+              </Link>
+            </div>
+          </section>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <EmptyStep number="1" title="Define your fit" body="Choose categories, stage, and risk tolerance." />
+            <EmptyStep number="2" title="Compare evidence" body="Review Build Rounds, risks, and Proofs of Build." />
+            <EmptyStep number="3" title="Fund the build" body="Allocate VIBE and watch the portfolio populate." />
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell
       role={juror.role}
@@ -345,6 +390,16 @@ function HeroStat({ label, value }: { label: string; value: string }) {
         {label}
       </div>
       <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function EmptyStep({ number, title, body }: { number: string; title: string; body: string }) {
+  return (
+    <div className="card-surface p-5">
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{number}</div>
+      <div className="mt-4 font-medium">{title}</div>
+      <p className="mt-1 text-sm text-muted-foreground">{body}</p>
     </div>
   );
 }

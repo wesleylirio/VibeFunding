@@ -13,6 +13,7 @@ import { listProjects } from "@/lib/queries/projects";
 import {
   getInvestedProjectIds,
   getInvestedProjectSlugs,
+  getPortfolio,
 } from "@/lib/queries/portfolio";
 import { getDemoSession } from "@/lib/demo/session";
 
@@ -94,8 +95,20 @@ async function buildProactiveInsight(input: {
   const { context, projectId, projectName, proofId, firstName, gateway } = input;
 
   if (context === "INVESTOR_PORTFOLIO") {
+    const session = await getDemoSession();
+    const portfolio = await getPortfolio(session.investorId);
+    if (portfolio.investedProjectCount === 0) {
+      return {
+        teaser: "Your portfolio is empty — I can help with the first decision.",
+        title: "Build your first position",
+        content: `${firstName}, you have **${portfolio.vibeBalance.toLocaleString()} VIBE** available and no project exposure yet.\n\nStart with three questions:\n\n• Which categories do you understand?\n• What stage and risk level fit you?\n• Which projects show a clear Build Round and Proof of Build evidence?\n\nOpen **Discover** and I’ll help compare the candidates.`,
+        provider: "DEMO" as const,
+        attribution: null,
+      };
+    }
     const insight = await gateway.analyzePortfolio({
       investorId: "user-investor-demo",
+      displayName: firstName,
     });
     return {
       teaser: "I have a portfolio insight for you.",

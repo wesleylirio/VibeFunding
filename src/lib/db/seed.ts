@@ -540,54 +540,9 @@ export async function seedDatabase(options?: { force?: boolean }) {
         createdAt: daysAgo(100),
         updatedAt: nowIso(),
       },
-      {
-        id: "hold-mesh-seed",
-        investorId: INVESTOR_ID,
-        projectId: "proj-collabmesh",
-        assetType: "PROJECT_TOKEN",
-        assetSymbol: "MESH",
-        assetName: "CollabMesh Token",
-        amount: 3200,
-        simulatedValue: 4160,
-        metadata: JSON.stringify({ source: "Prior Build Round" }),
-        createdAt: daysAgo(55),
-        updatedAt: daysAgo(55),
-      },
-      {
-        id: "hold-nft-cm",
-        investorId: INVESTOR_ID,
-        projectId: "proj-collabmesh",
-        assetType: "NFT",
-        assetSymbol: "MESH-NFT",
-        assetName: "Builder Presence Pass",
-        amount: 1,
-        simulatedValue: 500,
-        metadata: JSON.stringify({ nftId: "nft-cm-presence" }),
-        createdAt: daysAgo(55),
-        updatedAt: daysAgo(55),
-      },
     ])
     .run();
 
-  await db.insert(allocations)
-    .values([
-      {
-        id: "alloc-seed-cm",
-        investorId: INVESTOR_ID,
-        buildRoundId: "round-collabmesh-prev",
-        projectId: "proj-collabmesh",
-        resourceType: "VIBE",
-        amount: 4000,
-        normalizedValue: 4000,
-        buildUnits: 4000,
-        rewardTokens: 3200,
-        rewardNftId: "nft-cm-presence",
-        settlementStatus: "IMMEDIATE",
-        verifiedAt: daysAgo(55),
-        createdAt: daysAgo(55),
-      },
-    ])
-    .run();
 
   // Agent runs
   const runCm = {
