@@ -66,7 +66,7 @@ describe("allocation settlement", () => {
     getPortfolio = portfolioMod.getPortfolio;
     INVESTOR_ID = ids.INVESTOR_ID;
 
-    seedDatabase({ force: true });
+    await seedDatabase({ force: true });
   });
 
   afterAll(async () => {

@@ -33,7 +33,7 @@ describe("seed and allocate", () => {
     getProofById = proofsMod.getProofById;
     INVESTOR_ID = ids.INVESTOR_ID;
 
-    seedDatabase({ force: true });
+    await seedDatabase({ force: true });
   });
 
   afterAll(async () => {

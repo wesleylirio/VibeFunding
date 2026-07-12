@@ -142,7 +142,7 @@ describe("context filtering boundaries", () => {
     process.env.DATABASE_URL =
       process.env.DATABASE_URL || "file:./data/test-gemma-ctx.db";
     const { seedDatabase } = await import("../src/lib/db/seed");
-    seedDatabase({ force: true });
+    await seedDatabase({ force: true });
   });
 
   it("portfolio context excludes private agent payloads", async () => {

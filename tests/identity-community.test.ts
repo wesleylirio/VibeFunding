@@ -54,7 +54,7 @@ describe("founder quickstart", () => {
       if (fs.existsSync(f)) fs.unlinkSync(f);
     }
     const { seedDatabase } = await import("../src/lib/db/seed");
-    seedDatabase({ force: true });
+    await seedDatabase({ force: true });
   });
 
   afterAll(async () => {
@@ -123,7 +123,7 @@ describe("community reactions", () => {
     }
     // Re-import after path set
     const seedMod = await import("../src/lib/db/seed");
-    seedMod.seedDatabase({ force: true });
+    await seedMod.seedDatabase({ force: true });
   });
 
   afterAll(async () => {

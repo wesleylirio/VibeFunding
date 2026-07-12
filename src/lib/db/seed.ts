@@ -11,8 +11,10 @@ import {
   buildRounds,
   communityComments,
   communityPosts,
+  communityReactions,
   demoState,
   gemmaInsights,
+  gemmaMessages,
   holdings,
   nfts,
   projects,
@@ -36,7 +38,36 @@ import {
   sha256,
 } from "./seed-data";
 
-export function clearAllTables() {
+export async function clearAllTables() {
+  if (useRemoteDb()) {
+    const db = getDb();
+    const tables = [
+      communityReactions,
+      communityComments,
+      communityPosts,
+      proofArtifacts,
+      proofsOfBuild,
+      agentEvents,
+      agentRuns,
+      stakeholderUpdates,
+      gemmaMessages,
+      gemmaInsights,
+      allocations,
+      holdings,
+      nfts,
+      returnMechanisms,
+      resourceRequirements,
+      buildRounds,
+      projects,
+      demoState,
+      users,
+    ];
+    for (const table of tables) {
+      await (db as any).delete(table).run();
+    }
+    return;
+  }
+
   const sqlite = getSqlite();
   const tables = [
     "community_reactions",
@@ -84,13 +115,17 @@ export async function seedDatabase(options?: { force?: boolean }) {
         return { seeded: false, reason: "already-seeded" as const };
       }
     } else {
-      clearAllTables();
+      await clearAllTables();
     }
+  }
+
+  if (useRemoteDb() && options?.force) {
+    await clearAllTables();
   }
 
   const createdAt = daysAgo(200);
 
-  db.insert(users)
+  await db.insert(users)
     .values([
       {
         id: INVESTOR_ID,
@@ -197,7 +232,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
     createdAt: daysAgo(120 - i * 3),
   }));
 
-  db.insert(projects).values([...detailedRows, ...summaryRows]).run();
+  await db.insert(projects).values([...detailedRows, ...summaryRows]).run();
 
   // Build rounds for detailed projects
   const rounds = [
@@ -303,7 +338,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
     createdAt: daysAgo(14 - (i % 5)),
   }));
 
-  db.insert(buildRounds)
+  await db.insert(buildRounds)
     .values(
       [...rounds, ...summaryRounds].map((r) => ({
         ...r,
@@ -393,7 +428,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
     });
   }
 
-  db.insert(resourceRequirements).values(resources).run();
+  await db.insert(resourceRequirements).values(resources).run();
 
   const returns = [
     {
@@ -457,7 +492,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
     });
   }
 
-  db.insert(returnMechanisms).values(returns).run();
+  await db.insert(returnMechanisms).values(returns).run();
 
   const nftRows = [
     {
@@ -487,10 +522,10 @@ export async function seedDatabase(options?: { force?: boolean }) {
     },
   ];
 
-  db.insert(nfts).values(nftRows).run();
+  await db.insert(nfts).values(nftRows).run();
 
   // Seed holdings for investor
-  db.insert(holdings)
+  await db.insert(holdings)
     .values([
       {
         id: "hold-vibe-cash",
@@ -534,7 +569,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
     ])
     .run();
 
-  db.insert(allocations)
+  await db.insert(allocations)
     .values([
       {
         id: "alloc-seed-cm",
@@ -617,7 +652,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
     createdAt: daysAgo(5),
   };
 
-  db.insert(agentRuns).values([runCm, runIl]).run();
+  await db.insert(agentRuns).values([runCm, runIl]).run();
 
   const cmEvents = buildAgentEvents(runCm.id, "CollabMesh");
   const ilEvents = buildAgentEvents(runIl.id, "InferLane").map((e, i) => ({
@@ -625,7 +660,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
     id: `${runIl.id}-evt-${i + 1}`,
     runId: runIl.id,
   }));
-  db.insert(agentEvents).values([...cmEvents, ...ilEvents]).run();
+  await db.insert(agentEvents).values([...cmEvents, ...ilEvents]).run();
 
   const cmArtifacts = [
     {
@@ -680,7 +715,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
   });
 
   const proofCmId = "proof-collabmesh-1";
-  db.insert(proofsOfBuild)
+  await db.insert(proofsOfBuild)
     .values({
       id: proofCmId,
       projectId: runCm.projectId,
@@ -717,7 +752,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
     })
     .run();
 
-  db.insert(proofArtifacts)
+  await db.insert(proofArtifacts)
     .values(
       cmArtifacts.map((a, i) => ({
         id: `art-cm-${i + 1}`,
@@ -770,7 +805,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
   });
 
   const proofIlId = "proof-inferlane-1";
-  db.insert(proofsOfBuild)
+  await db.insert(proofsOfBuild)
     .values({
       id: proofIlId,
       projectId: runIl.projectId,
@@ -807,7 +842,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
     })
     .run();
 
-  db.insert(proofArtifacts)
+  await db.insert(proofArtifacts)
     .values(
       ilArtifacts.map((a, i) => ({
         id: `art-il-${i + 1}`,
@@ -823,7 +858,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
     )
     .run();
 
-  db.insert(stakeholderUpdates)
+  await db.insert(stakeholderUpdates)
     .values([
       {
         id: "update-cm-1",
@@ -863,7 +898,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
     ])
     .run();
 
-  db.insert(gemmaInsights)
+  await db.insert(gemmaInsights)
     .values([
       {
         id: "insight-portfolio-brief",
@@ -919,7 +954,7 @@ export async function seedDatabase(options?: { force?: boolean }) {
     ])
     .run();
 
-  db.insert(demoState)
+  await db.insert(demoState)
     .values({
       id: "default",
       activeRole: "INVESTOR",
@@ -931,8 +966,8 @@ export async function seedDatabase(options?: { force?: boolean }) {
   // Community feed — every project starts with team + community activity
   const { posts: communityPostRows, comments: communityCommentRows } =
     buildCommunitySeed();
-  db.insert(communityPosts).values(communityPostRows).run();
-  db.insert(communityComments).values(communityCommentRows).run();
+  await db.insert(communityPosts).values(communityPostRows).run();
+  await db.insert(communityComments).values(communityCommentRows).run();
 
   return { seeded: true as const };
 }
