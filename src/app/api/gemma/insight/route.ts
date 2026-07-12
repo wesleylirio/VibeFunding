@@ -110,7 +110,7 @@ async function buildProactiveInsight(input: {
     (context === "PROJECT_DILIGENCE" || context === "BUILD_ROUND_ANALYSIS") &&
     projectId
   ) {
-    const insight = await gateway.analyzeProject({ projectId });
+    const insight = await gateway.analyzeProject({ projectId, investorId: "user-investor-demo" });
     return {
       teaser: projectName
         ? `I looked at ${projectName} — risks, strengths, and the Build Round.`

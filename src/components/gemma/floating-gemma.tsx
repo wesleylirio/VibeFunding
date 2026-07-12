@@ -370,7 +370,6 @@ export function FloatingGemma({
   const firstName = userName?.split(" ")[0];
   // Project pages: badge only. Elsewhere: teaser for 10s then badge only.
   const showTeaserBubble =
-    !pathname.startsWith("/projects/") &&
     showTeaser &&
     (hasUnread || fetchingInsight);
 

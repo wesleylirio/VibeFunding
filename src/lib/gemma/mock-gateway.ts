@@ -14,6 +14,7 @@ import { ensureSeeded } from "@/lib/demo/ensure-seeded";
 import {
   getInvestedProjectIds,
   getInvestedProjectSlugs,
+  getPortfolio,
 } from "@/lib/queries/portfolio";
 import { listProjects } from "@/lib/queries/projects";
 import { rankProjectMatches } from "@/lib/investor/preferences";
@@ -133,7 +134,7 @@ What would you like to examine?`;
     };
   }
 
-  async analyzeProject(input: { projectId: string }): Promise<GemmaInsight> {
+  async analyzeProject(input: { projectId: string; investorId?: string }): Promise<GemmaInsight> {
     ensureSeeded();
     const db = getDb();
     const cached = db
@@ -179,30 +180,83 @@ What would you like to examine?`;
       .where(eq(buildRounds.projectId, project.id))
       .all();
 
+    const alreadyInvestedSlugs = input.investorId ? [...getInvestedProjectSlugs(input.investorId)] : [];
+    const isAlreadyInvested = alreadyInvestedSlugs.includes(project.slug);
+
+    const activeRound = rounds.find((r) => r.status === "OPEN" || r.status === "BUILDING");
+    const proofCount = proofs.length;
+    const roundCount = rounds.length;
+    const verifiedProofs = proofs.filter((p) => p.verificationStatus === "HUMAN_VERIFIED" || p.verificationStatus === "HASH_VERIFIED").length;
+    const hasCompletedRound = rounds.some((r) => r.status === "COMPLETED");
+
+    // Dynamic strengths based on real data
+    const strengths: string[] = [];
+    if (proofCount > 0) {
+      strengths.push(
+        `${proofCount} Proof${proofCount === 1 ? "" : "s"} of Build on record${verifiedProofs > 0 ? ` (${verifiedProofs} verified)` : ""}`
+      );
+    } else {
+      strengths.push("Clear project category and stage defined");
+    }
+    if (hasCompletedRound) {
+      strengths.push("Prior completed Build Round — proven fundraising track record");
+    } else if (activeRound) {
+      const pct = Math.round((activeRound.fundedValue / Math.max(activeRound.targetValue, 1)) * 100);
+      strengths.push(
+        `Build Round "${activeRound.title}" — ${Math.min(pct, 100)}% funded`
+      );
+    }
+    strengths.push("Founder-controlled roadmap (Gemma does not control sprints)");
+
+    // Dynamic risks based on real data
+    const dynamicRisks: string[] = risks.slice(0, 2);
+    if (proofCount === 0) {
+      dynamicRisks.push("No Proof of Build evidence yet — execution unverified");
+    }
+    if (activeRound && activeRound.targetValue > 0 && activeRound.fundedValue < activeRound.targetValue * 0.3) {
+      const pct = Math.round((activeRound.fundedValue / activeRound.targetValue) * 100);
+      dynamicRisks.push(`Build Round "${activeRound.title}" is only ${pct}% funded — may stall without more contributions`);
+    }
+    if (dynamicRisks.length < 2) {
+      dynamicRisks.push("Early-stage execution risk");
+    }
+
+    // Dynamic questions
+    const questions: string[] = [];
+    if (activeRound && activeRound.targetValue > 0 && activeRound.fundedValue < activeRound.targetValue) {
+      const remaining = Math.round(((activeRound.targetValue - activeRound.fundedValue) / activeRound.targetValue) * 100);
+      questions.push(`How will the remaining ${remaining}% of funding convert into the next verifiable delivery?`);
+    }
+    questions.push("What remains private vs investor-visible?");
+    if (proofCount > 0 && !verifiedProofs) {
+      questions.push("Proofs are recorded — what is the verification path?");
+    }
+
+    // Personalize summary with investment status
+    let summary = `${project.name} is a ${project.stage}-stage ${project.category} project. ${project.shortDescription.slice(0, 200)} Currently ${proofCount > 0 ? `${proofCount} Proof${proofCount === 1 ? "" : "s"} of Build on record` : "no Proofs of Build yet"} and ${roundCount} Build Round${roundCount === 1 ? "" : "s"}${activeRound ? ` (active: "${activeRound.title}" at ${Math.round((activeRound.fundedValue / Math.max(activeRound.targetValue, 1)) * 100)}% funded)` : ""}.`;
+    if (isAlreadyInvested) {
+      summary += ` You already hold a position in ${project.name} — this analysis is for your existing exposure.`;
+    }
+
+    const portfolioImpact = isAlreadyInvested
+      ? `You already hold ${project.name}. Review current allocation vs category exposure.`
+      : `Adding ${project.name} increases exposure to ${project.category}.`;
+
     return baseInsight({
-      title: `${project.name} due diligence`,
-      summary: `${project.name} is a ${project.stage} ${project.category} project. ${project.shortDescription} There ${proofs.length === 1 ? "is" : "are"} ${proofs.length} Proof${proofs.length === 1 ? "" : "s"} of Build on record and ${rounds.length} Build Round${rounds.length === 1 ? "" : "s"}.`,
-      risks: risks.slice(0, 4),
-      strengths: [
-        proofs.length > 0 ? "Has recorded Proof of Build evidence" : "Listed with clear category and stage",
-        rounds.some((r) => r.status === "COMPLETED")
-          ? "Prior completed Build Round"
-          : "Active fundraising narrative",
-        "Founder-controlled roadmap (Gemma does not control sprints)",
-      ],
-      questions: [
-        "How will resources convert into the next verifiable delivery?",
-        "What remains private vs investor-visible?",
-      ],
-      portfolioImpact: `Adding ${project.name} increases exposure to ${project.category}.`,
+      title: `${project.name} — due diligence`,
+      summary,
+      risks: dynamicRisks.slice(0, 4),
+      strengths: strengths.slice(0, 4),
+      questions: questions.slice(0, 3),
+      portfolioImpact,
       sources: ["project profile", "build rounds", "proofs"],
       provider: "DEMO",
     });
   }
 
   async analyzePortfolio(input?: { investorId: string }): Promise<GemmaInsight> {
-    void input;
     ensureSeeded();
+    const investorId = input?.investorId || "user-investor-demo";
     const db = getDb();
     const cached = db
       .select()
@@ -223,14 +277,47 @@ What would you like to examine?`;
       };
     }
 
-    const rows = db.select().from(holdings).all();
-    const tokens = rows.filter((h) => h.assetType === "PROJECT_TOKEN");
+    const portfolio = getPortfolio(investorId);
+    const tokens = portfolio.tokenHoldings;
+    const nfts = portfolio.nftHoldings;
+    const byCategory = portfolio.byCategory;
+    const topCategory = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
+    const categories = Object.keys(byCategory);
+
+    const dynamicStrengths: string[] = [];
+    if (tokens.length > 0) {
+      dynamicStrengths.push(`${tokens.length} project token position${tokens.length === 1 ? "" : "s"}`);
+    }
+    if (nfts.length > 0) {
+      dynamicStrengths.push(`${nfts.length} NFT holding${nfts.length === 1 ? "" : "s"}`);
+    }
+    dynamicStrengths.push(`VIBE balance: ${portfolio.vibeBalance.toLocaleString()} VIBE`);
+    if (categories.length > 1) {
+      dynamicStrengths.push(`Spread across ${categories.length} categor${categories.length === 1 ? "y" : "ies"}`);
+    } else {
+      dynamicStrengths.push("Focused portfolio thesis");
+    }
+
+    const dynamicRisks: string[] = [];
+    if (topCategory && topCategory[1] > 60) {
+      dynamicRisks.push(`Heavy concentration in ${topCategory[0]} (${Math.round(topCategory[1])}% of portfolio)`);
+    } else {
+      dynamicRisks.push("Category concentration possible — review allocation balance");
+    }
+    dynamicRisks.push("Open rounds still need funding");
+
+    const dynamicQuestions: string[] = [];
+    if (categories.length < 3) {
+      dynamicQuestions.push("Consider diversifying into adjacent categories?");
+    }
+    dynamicQuestions.push("Prefer compute allocations vs VIBE allocations?");
+
     return baseInsight({
       title: "Portfolio briefing",
-      summary: `You hold ${tokens.length} project token position(s) plus simulated VIBE. Focus on projects with Proofs of Build when evaluating follow-on allocations. This is informational only — not investment advice.`,
-      risks: ["Category concentration possible", "Open rounds still need funding"],
-      strengths: ["Evidence-linked holdings", "Multi-asset mix (tokens + NFTs)"],
-      questions: ["Diversify by category?", "Prefer compute vs VIBE allocations?"],
+      summary: `You hold ${tokens.length} project token position${tokens.length === 1 ? "" : "s"}${nfts.length > 0 ? ` and ${nfts.length} NFT${nfts.length === 1 ? "" : "s"}` : ""} with ${portfolio.vibeBalance.toLocaleString()} VIBE available.${topCategory ? ` Largest category exposure: ${topCategory[0]} (${Math.round(topCategory[1])}%).` : ""} Focus on projects with Proofs of Build when evaluating follow-on allocations. This is informational only — not investment advice.`,
+      risks: dynamicRisks,
+      strengths: dynamicStrengths,
+      questions: dynamicQuestions,
       sources: ["holdings"],
       provider: "DEMO",
     });
@@ -250,22 +337,47 @@ What would you like to examine?`;
         summary: "I could not locate this Proof of Build.",
       });
     }
+
+    const taskLabel = proof.taskTitle.slice(0, 120);
+    const testsPassed = proof.testsPassed ?? 0;
+    const testsTotal = proof.testsTotal ?? 0;
+    const hasTests = testsTotal > 0;
+    const allPassed = hasTests && testsPassed === testsTotal;
+    const hasFiles = (proof.filesChanged ?? 0) > 0;
+
+    const strengths: string[] = [
+      `Verification: ${proof.verificationStatus === "HUMAN_VERIFIED" ? "Human-verified" : proof.verificationStatus === "HASH_VERIFIED" ? "Hash-verified" : "Recorded"}`,
+    ];
+    if (hasTests) {
+      strengths.push(`Tests: ${testsPassed}/${testsTotal}${allPassed ? " (all passing)" : ""}`);
+    }
+    if (hasFiles) {
+      strengths.push(`Files changed: ${proof.filesChanged} (${proof.linesAdded ?? 0}+ / ${proof.linesRemoved ?? 0}-)`);
+    }
+    if (proof.model) {
+      strengths.push(`Agent model: ${proof.model}`);
+    }
+
+    const risks: string[] = ["Does not certify code quality", "Human review remains important"];
+    if (!allPassed && hasTests) {
+      risks.push(`${testsTotal - testsPassed} test${testsTotal - testsPassed === 1 ? "" : "s"} failing — review before relying on output`);
+    }
+
+    const questions: string[] = [];
+    if (!allPassed && hasTests) {
+      questions.push("What is the plan for the failing tests?");
+    }
+    questions.push("How does this proof connect to the Build Round deliverables?");
+
     return baseInsight({
-      title: "Proof of Build explained",
+      title: `Proof: ${taskLabel}`,
       summary:
         proof.gemmaSummary ||
         proof.publicSummary ||
-        "This proof records an agent execution with hashed artifacts. It evidences that work was performed — not that the result is production-ready.",
-      strengths: [
-        `Verification: ${proof.verificationStatus}`,
-        proof.testsPassed != null
-          ? `Tests: ${proof.testsPassed}/${proof.testsTotal}`
-          : "Artifacts hashed",
-      ],
-      risks: [
-        "Does not certify code quality",
-        "Human review remains important",
-      ],
+        `Agent run for "${taskLabel}" — ${hasTests ? `${testsPassed}/${testsTotal} tests passing` : "artifacts recorded"}. ${proof.verificationStatus === "HUMAN_VERIFIED" ? "This proof was human-verified." : proof.verificationStatus === "HASH_VERIFIED" ? "Hash verification matches the manifest." : "Recorded but not yet independently verified."}`,
+      strengths,
+      risks,
+      questions,
       sources: ["proof manifest", "agent run"],
       provider: "CACHE",
     });

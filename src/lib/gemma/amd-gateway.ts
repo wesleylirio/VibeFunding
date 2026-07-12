@@ -35,11 +35,11 @@ import {
 import type { QuickstartDraft, QuickstartInput } from "@/lib/founder/quickstart";
 import { generateQuickstartDraft } from "@/lib/founder/quickstart";
 import { nowIso } from "@/lib/db/seed-data";
+import { getPortfolio, getInvestedProjectSlugs } from "@/lib/queries/portfolio";
 
-const SYSTEM_BASE = `You are Gemma, the VibeFunding portfolio copilot — Google DeepMind's Gemma model serving live investor intelligence for the agentic economy.
-You run via Fireworks AI on AMD-backed infrastructure (Gemma 4 IT).
+const SYSTEM_BASE = `You are Gemma, the VibeFunding portfolio copilot — an LLM-based assistant serving live investor intelligence for the agentic economy.
 Rules:
-- Be concise, professional, and investor-friendly.
+- Be concise, professional, and investor-friendly. Use natural language, not bullet-spam.
 - Never present regulated financial advice.
 - Never execute investments or publish founder content.
 - Never claim Proof of Build guarantees code quality or project success.
@@ -47,7 +47,11 @@ Rules:
 - Prefer concrete, structured observations over marketing language.
 - When relevant, explain how VIBE converts to AMD GPU Cloud Credits (50 VIBE = 1 AMD GPU Hour) that fund agent work.
 - Make your independent analysis distinct from project marketing claims.
-- Never re-suggest projects listed under alreadyInvestedSlugs / holdings for new investment — the user already funded those. Point them to other open Build Rounds instead.`;
+- Never re-suggest projects listed under alreadyInvestedSlugs / holdings for new investment — the user already funded those. Point them to other open Build Rounds instead. If they ask about a project they already hold, analyze it as a holding review, not a new investment pitch.
+- If context shows the project's Build Round is already 100% funded, tell the user the round is full and suggest they wait for the next round.
+- When the user's portfolio context is available, consider category concentration, existing holdings, and vibeBalance when giving recommendations. If they're already heavy in one category, note it.
+- When comparing projects, prefer ones with Proof of Build evidence over ones without. Treat verified proofs as stronger signals than unverified ones.
+- If a Build Round has low funding progress (<30%), flag the risk of stalling. If it's well-funded (>70%), note momentum as a positive signal.`;
 
 function toInsight(
   raw: ReturnType<typeof gemmaInsightSchema.parse>,
@@ -145,15 +149,19 @@ export class AmdGemmaGateway implements GemmaGateway {
     }
 
     if (!this.configured) {
+      console.log("[Gemma] no live credentials → mock chat");
       return this.fallback.chat(input);
     }
 
     try {
+      const cfg = getAmdConfigFromEnv();
+      console.log(`[Gemma] live chat → ${cfg.backend} (model: ${cfg.model})`);
       const system = `${SYSTEM_BASE}
 Current page context: ${input.context}.
 Answer using only the provided JSON context. Keep under 220 words unless asked for detail.`;
       const user = `Context JSON:\n${JSON.stringify(payload)}\n\nUser message:\n${input.message}`;
       const result = await this.completeText(system, user);
+      console.log(`[Gemma] live OK — ${result.latencyMs}ms`);
       const response: GemmaResponse = {
         content: result.content,
         provider: "AMD_GEMMA",
@@ -169,7 +177,8 @@ Answer using only the provided JSON context. Keep under 220 words unless asked f
         contextType: input.context,
       });
       return response;
-    } catch {
+    } catch (err) {
+      console.warn("[Gemma] live failed, falling back to mock", err);
       return this.fallback.chat(input);
     }
   }
@@ -186,7 +195,10 @@ Answer using only the provided JSON context. Keep under 220 words unless asked f
     }
     if (!this.configured) return this.fallback.analyzeProject(input);
 
-    const key = `project:${contextHash("PROJECT_DILIGENCE", ctx)}`;
+    const keyBase = contextHash("PROJECT_DILIGENCE", ctx);
+    const key = input.investorId
+      ? `project:${keyBase}:user-${input.investorId}`
+      : `project:${keyBase}`;
     const cached = getCached<GemmaInsight>(key);
     if (cached) {
       return {
@@ -196,11 +208,40 @@ Answer using only the provided JSON context. Keep under 220 words unless asked f
       };
     }
 
+    // Enrich context with investor portfolio data
+    const enrichment: Record<string, unknown> = {};
+    if (input.investorId) {
+      const portfolio = getPortfolio(input.investorId);
+      const investedSlugs = getInvestedProjectSlugs(input.investorId);
+      enrichment.alreadyInvestedSlugs = [...investedSlugs];
+      enrichment.isAlreadyInvested = investedSlugs.has(ctx.slug);
+      enrichment.userPortfolio = {
+        vibeBalance: portfolio.vibeBalance,
+        holdings: portfolio.tokenHoldings.map((h) => ({
+          symbol: h.assetSymbol,
+          amount: h.amount,
+          project: h.project?.name,
+          category: h.project?.category,
+        })),
+        categoryExposure: portfolio.byCategory,
+      };
+    }
+
     const system = `${SYSTEM_BASE}
+You are performing due diligence on a project for an investor.
 Return ONLY JSON with keys:
 title, summary, risks (string[]), strengths (string[]), questions (string[]),
-executionAssessment (string), buildRoundAssessment (string), portfolioRelevance (string), sources (string[]).`;
-    const user = `Perform due diligence on this public project data:\n${JSON.stringify(ctx)}`;
+executionAssessment (string), buildRoundAssessment (string), portfolioRelevance (string), sources (string[]).
+
+Guidelines:
+- summary: 2-3 sentences covering what the project does, its stage, and funding status. If the user already invested, mention it.
+- risks: 2-4 specific, data-backed risks. Reference concrete context (e.g. "no Proofs of Build yet", "only 40% funded", "you already hold this category").
+- strengths: 2-4 specific strengths. Mention proofs, funding progress, founder background if available.
+- questions: 1-3 open questions an investor would ask before committing.
+- executionAssessment: 1-2 sentences on whether the team is shipping (based on proofs, agent runs, deliverables).
+- buildRoundAssessment: 1 sentence on round health (funding progress, deliverables clarity).
+- portfolioRelevance: 1 sentence on how this fits into the user's existing portfolio — category exposure, concentration risk, and whether they already hold it.`;
+    const user = `Here is the project data:\n${JSON.stringify(ctx)}\n\nInvestor context:\n${JSON.stringify(enrichment)}`;
     try {
       let result = await this.completeJson(system, user);
       let parsed = extractJson(result.content);

@@ -16,6 +16,7 @@ export function AllocateButton({
   deliverables = [],
   objective,
   primaryProofId,
+  disabled = false,
 }: {
   buildRoundId: string;
   projectId: string;
@@ -28,12 +29,13 @@ export function AllocateButton({
   deliverables?: string[];
   objective?: string;
   primaryProofId?: string | null;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <Button type="button" variant={variant} onClick={() => setOpen(true)}>
+      <Button type="button" variant={variant} onClick={() => setOpen(true)} disabled={disabled}>
         {label}
       </Button>
       <AllocationModal

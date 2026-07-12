@@ -300,7 +300,9 @@ export function buildChatContextPayload(input: {
 
   if (
     input.context === "INVESTOR_PORTFOLIO" ||
-    input.context === "GLOBAL_DISCOVERY"
+    input.context === "GLOBAL_DISCOVERY" ||
+    input.context === "PROJECT_DILIGENCE" ||
+    input.context === "BUILD_ROUND_ANALYSIS"
   ) {
     base.portfolio = buildPortfolioContext({
       displayName: input.displayName,

@@ -246,16 +246,6 @@ export function VibeComputeCinematic() {
         </div>
       </div>
 
-      {/* Handoff — red · coral · purple into the rest of the page */}
-      <div
-        className="pointer-events-none relative h-24 md:h-32"
-        aria-hidden
-        style={{
-          background:
-            "linear-gradient(180deg, #070708 0%, rgba(255,59,71,0.16) 30%, rgba(255,90,61,0.12) 52%, rgba(130,104,255,0.12) 78%, #070708 100%)",
-        }}
-      />
-
       <div id="compute" className="sr-only" aria-hidden />
       <div id="agents" className="sr-only" aria-hidden />
     </section>

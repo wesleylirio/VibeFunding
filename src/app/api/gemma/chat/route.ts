@@ -97,7 +97,10 @@ export async function POST(request: Request) {
         lower.includes("risk") ||
         lower.includes("this project"))
     ) {
-      const insight = await gateway.analyzeProject({ projectId });
+      const insight = await gateway.analyzeProject({
+        projectId,
+        investorId: juror.role === "INVESTOR" ? "user-investor-demo" : undefined,
+      });
       return NextResponse.json({
         content: formatInsightContent(insight, juror.displayName),
         insight,

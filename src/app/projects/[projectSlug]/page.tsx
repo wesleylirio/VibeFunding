@@ -149,20 +149,6 @@ export default async function ProjectPage({
               </div>
             )}
 
-            {activeRound ? (
-              <AllocateButton
-                buildRoundId={activeRound.id}
-                projectId={project.id}
-                projectName={project.name}
-                roundTitle={activeRound.title}
-                tokenSymbol={project.tokenSymbol}
-                vibeBalance={portfolio.vibeBalance}
-                label="Invest with VIBE"
-                deliverables={activeRound.expectedDeliverables}
-                objective={activeRound.objective}
-                primaryProofId={project.proofs[0]?.id}
-              />
-            ) : null}
           </div>
         </section>
 
@@ -304,7 +290,8 @@ export default async function ProjectPage({
                     roundTitle={activeRound.title}
                     tokenSymbol={project.tokenSymbol}
                     vibeBalance={portfolio.vibeBalance}
-                    label="Invest with VIBE"
+                    label={activeRound.progress >= 100 ? "Wait for next round" : "Invest with VIBE"}
+                    disabled={activeRound.progress >= 100}
                     deliverables={activeRound.expectedDeliverables}
                     objective={activeRound.objective}
                     primaryProofId={project.proofs[0]?.id}

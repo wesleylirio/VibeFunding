@@ -1,17 +1,19 @@
 import { cn } from "@/lib/utils";
 
-/** Index washes — one obsidian/red atmosphere; Gemma keeps its navy identity. */
+/**
+ * Index washes — unified Vibe palette (red → fire → neon → soft pink).
+ * No blue. Every section breathes the same brand warmth.
+ */
 const WASH: Record<string, string> = {
   projects:
     "bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(255,90,61,0.12),transparent_55%)]",
   gemma:
-    "bg-[radial-gradient(ellipse_70%_55%_at_30%_40%,rgba(7,27,61,0.34),transparent_52%),radial-gradient(ellipse_55%_45%_at_80%_55%,rgba(22,79,156,0.2),transparent_50%),radial-gradient(ellipse_40%_40%_at_50%_80%,rgba(255,59,71,0.06),transparent_50%)]",
+    "bg-[radial-gradient(ellipse_70%_55%_at_30%_40%,rgba(255,90,61,0.10),transparent_52%),radial-gradient(ellipse_55%_45%_at_80%_55%,rgba(255,59,71,0.08),transparent_50%),radial-gradient(ellipse_40%_40%_at_50%_80%,rgba(232,60,255,0.06),transparent_50%)]",
   proof:
-    "bg-[radial-gradient(ellipse_70%_55%_at_75%_30%,rgba(255,59,71,0.12),transparent_52%),radial-gradient(ellipse_45%_40%_at_15%_70%,rgba(255,90,61,0.08),transparent_50%)]",
-  rewards:
-    "bg-[radial-gradient(ellipse_75%_55%_at_50%_100%,rgba(255,59,71,0.11),transparent_55%),radial-gradient(ellipse_40%_35%_at_20%_20%,rgba(255,90,61,0.09),transparent_50%)]",
+    "bg-[radial-gradient(ellipse_70%_55%_at_75%_30%,rgba(232,60,255,0.10),transparent_52%),radial-gradient(ellipse_45%_40%_at_15%_70%,rgba(255,59,71,0.08),transparent_50%)]",
+  rewards: "",
   community:
-    "bg-[radial-gradient(ellipse_60%_50%_at_70%_40%,rgba(255,59,71,0.11),transparent_50%),radial-gradient(ellipse_45%_40%_at_15%_70%,rgba(255,90,61,0.08),transparent_50%)]",
+    "bg-[radial-gradient(ellipse_60%_50%_at_70%_40%,rgba(255,59,71,0.10),transparent_50%),radial-gradient(ellipse_45%_40%_at_15%_70%,rgba(255,90,61,0.07),transparent_50%)]",
 };
 
 export function SectionShell({

@@ -7,15 +7,13 @@ export function FinalCTA() {
   return (
     <section className="vf-index-section px-4 md:px-8">
       <Reveal y={40} className="vf-final-cta relative mx-auto max-w-[var(--vf-index-max-width)] overflow-hidden rounded-3xl border border-[rgba(255,59,71,0.28)] px-6 py-12 text-center shadow-[var(--vf-shadow-lg)] md:px-12 md:py-16">
-        {/* Layered obsidian/red energy chamber */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 90% 70% at 50% 110%, rgba(255,59,71,0.38), transparent 56%), radial-gradient(ellipse 45% 55% at 10% 25%, rgba(255,90,61,0.12), transparent 55%), radial-gradient(ellipse 42% 50% at 90% 22%, rgba(255,59,71,0.14), transparent 52%), linear-gradient(145deg,#10090b,#070708 68%)",
-          }}
-          aria-hidden
-        />
+        {/* Base dark backdrop */}
+        <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(145deg,#10090b,#070708 68%)" }} aria-hidden />
+        {/* Drifting energy clouds */}
+        <div className="final-cta-cloud final-cta-cloud-1 pointer-events-none absolute" aria-hidden />
+        <div className="final-cta-cloud final-cta-cloud-2 pointer-events-none absolute" aria-hidden />
+        <div className="final-cta-cloud final-cta-cloud-3 pointer-events-none absolute" aria-hidden />
+        <div className="final-cta-cloud final-cta-cloud-4 pointer-events-none absolute" aria-hidden />
         <div className="vf-final-cta-grid pointer-events-none absolute inset-0" aria-hidden />
         <div className="vf-final-cta-orbit pointer-events-none absolute" aria-hidden />
 

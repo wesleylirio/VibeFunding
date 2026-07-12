@@ -7,6 +7,7 @@ import type {
 export interface ProjectAnalysisInput {
   projectId: string;
   projectSlug?: string;
+  investorId?: string;
 }
 
 export interface PortfolioAnalysisInput {

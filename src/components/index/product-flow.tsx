@@ -119,6 +119,13 @@ export function ProductFlow() {
   const link12 = useTransform(pathProgress, [0.28, 0.58], [0, 1]);
   const link23 = useTransform(pathProgress, [0.58, 0.9], [0, 1]);
 
+  // Ambient glow behind each step node — fades in as step activates
+  const glow0 = useTransform(progress, [0.06, 0.16], [0, 1]);
+  const glow1 = useTransform(progress, [0.24, 0.34], [0, 1]);
+  const glow2 = useTransform(progress, [0.42, 0.52], [0, 1]);
+  const glow3 = useTransform(progress, [0.60, 0.70], [0, 1]);
+  const glows = [glow0, glow1, glow2, glow3];
+
   return (
     <section id="how-it-works" className="relative scroll-mt-0">
       <div
@@ -126,25 +133,63 @@ export function ProductFlow() {
         className={isRetired ? "relative h-dvh" : "relative h-[190vh] md:h-[200vh]"}
       >
         <div
-          className={`${isRetired ? "relative" : "sticky top-0"} flex h-dvh flex-col overflow-hidden bg-background`}
+          className={`${isRetired ? "relative" : "sticky top-0"} flex h-dvh flex-col overflow-hidden bg-[#070708]`}
         >
-          {/* Single continuous, brighter rewards loop */}
-          <FlowAmbientLoop />
+          {/* Ambient lights that track each step's activation */}
+          <div
+            className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+            aria-hidden
+          >
+            {[
+              "rgba(255,59,71,0.2)",
+              "rgba(255,90,61,0.2)",
+              "rgba(130,104,255,0.2)",
+              "rgba(232,60,255,0.2)",
+            ].map((c, i) => (
+              <motion.div
+                key={i}
+                className="absolute top-[38%] -translate-x-1/2 -translate-y-1/2"
+                style={{
+                  left: `${12.5 + i * 25}%`,
+                  width: 320,
+                  height: 320,
+                  borderRadius: "50%",
+                  background: `radial-gradient(circle, ${c}, transparent 70%)`,
+                  opacity: glows[i],
+                  filter: "blur(60px)",
+                }}
+              />
+            ))}
+
+            {/* Traveling beam that sweeps along the connector */}
+            <motion.div
+              className="absolute top-[38%] h-36 -translate-y-1/2"
+              style={{
+                left: "12.5%",
+                width: "75%",
+                background:
+                  "linear-gradient(90deg, transparent, rgba(255,90,61,0.07), rgba(232,60,255,0.05), transparent)",
+                opacity: useTransform(pathProgress, [0, 0.15, 0.85, 1], [0, 0.6, 0.6, 0]),
+                filter: "blur(50px)",
+                x: useTransform(pathProgress, [0, 1], ["-100%", "100%"]),
+              }}
+            />
+          </div>
 
           <div className="relative z-10 flex h-full flex-col justify-center px-4 py-16 md:px-8 md:py-20">
             <div className="mx-auto w-full max-w-[var(--vf-index-max-width)] [text-shadow:0_2px_20px_rgba(0,0,0,0.55)]">
-              <SectionEyebrow className="text-center text-white/70">
+              <SectionEyebrow className="text-center text-white/70 text-sm md:text-base">
                 How it works
               </SectionEyebrow>
-              <h2 className="mt-2 text-center font-display text-2xl font-semibold tracking-tight text-white md:text-3xl lg:text-4xl">
+              <h2 className="mt-3 text-center font-display text-3xl font-semibold tracking-tight text-white md:text-4xl lg:text-5xl">
                 From VIBE to verified progress.
               </h2>
-              <p className="mx-auto mt-2 max-w-md text-center text-sm text-white/70">
+              <p className="mx-auto mt-3 max-w-lg text-center text-sm text-white/70 md:text-base">
                 Invest → compute → agents → proof.
               </p>
 
               {/* Desktop horizontal path */}
-              <div className="relative mx-auto mt-12 hidden max-w-5xl md:mt-16 md:block">
+              <div className="relative mx-auto mt-10 hidden max-w-6xl md:mt-14 md:block">
                 {/*
                   Connectors sit BETWEEN node centers only.
                   Ghost track always visible; brand fill grows with scroll.
@@ -260,22 +305,6 @@ function ConnectorFill({
   );
 }
 
-/** CSS-only energy field connecting the hero to the product path. */
-function FlowAmbientLoop() {
-  return (
-    <div className="flow-energy-field pointer-events-none absolute inset-0 z-0" aria-hidden>
-      <div className="flow-energy-grid" />
-      <div className="flow-energy-horizon" />
-      <div className="flow-energy-stream flow-energy-stream-1" />
-      <div className="flow-energy-stream flow-energy-stream-2" />
-      <div className="flow-energy-stream flow-energy-stream-3" />
-      <div className="flow-energy-particles">
-        {Array.from({ length: 10 }, (_, index) => <i key={index} />)}
-      </div>
-    </div>
-  );
-}
-
 function HorizontalStep({
   step,
   index,
@@ -337,11 +366,11 @@ function HorizontalStep({
       style={{ opacity, y }}
       className="relative flex flex-col items-center text-center"
     >
-      <div className="relative z-20 mb-4">
+      <div className="relative z-20 mb-5">
         {isLast ? (
           <motion.div
             aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--vf-magenta)] md:h-14 md:w-14"
+            className="pointer-events-none absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--vf-magenta)] md:h-16 md:w-16"
             style={{
               scale: ringScale,
               opacity: ringOpacity,
@@ -352,7 +381,7 @@ function HorizontalStep({
         ) : null}
         <motion.div
           style={{ scale: nodeScale, boxShadow }}
-          className="relative flex h-12 w-12 items-center justify-center rounded-full md:h-14 md:w-14"
+          className="relative flex h-14 w-14 items-center justify-center rounded-full md:h-16 md:w-16"
         >
           <div
             className="absolute inset-0 rounded-full"
@@ -370,7 +399,7 @@ function HorizontalStep({
             }
           />
           <div
-            className="relative z-[1] flex h-9 w-9 items-center justify-center rounded-full md:h-10 md:w-10"
+            className="relative z-[1] flex h-10 w-10 items-center justify-center rounded-full md:h-11 md:w-11"
             style={{
               background: isLast
                 ? "linear-gradient(135deg, rgba(255,59,71,0.28), rgba(232,60,255,0.24))"
@@ -378,14 +407,14 @@ function HorizontalStep({
               color: step.color,
             }}
           >
-            <Icon className="h-4 w-4 md:h-5 md:w-5" />
+            <Icon className="h-5 w-5 md:h-6 md:w-6" />
           </div>
         </motion.div>
       </div>
 
       <motion.div
-        className={`relative z-10 w-full rounded-2xl p-3.5 text-left md:p-4 ${
-          compact ? "min-h-[7.5rem]" : ""
+        className={`relative z-10 w-full rounded-2xl p-4 text-left md:p-5 ${
+          compact ? "min-h-[8rem]" : ""
         }`}
         style={{
           background: isLast
@@ -399,7 +428,7 @@ function HorizontalStep({
       >
         <div className="flex items-center gap-2">
           <span
-            className="text-[10px] font-semibold uppercase tracking-[0.14em]"
+            className="text-xs font-semibold uppercase tracking-[0.14em] md:text-sm"
             style={{ color: step.color }}
           >
             {step.label}
@@ -407,19 +436,19 @@ function HorizontalStep({
           {isLast ? (
             <motion.span
               style={{ opacity: finale }}
-              className="rounded-full bg-[rgba(232,60,255,0.14)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--vf-magenta)]"
+              className="rounded-full bg-[rgba(232,60,255,0.14)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--vf-magenta)]"
             >
               Unlocked
             </motion.span>
           ) : null}
         </div>
-        <h3 className="mt-1 font-display text-sm font-semibold md:text-base">
-          <span className="mr-1.5 font-mono text-xs text-muted-foreground">
+        <h3 className="mt-1.5 font-display text-base font-semibold md:text-lg">
+          <span className="mr-1.5 font-mono text-sm text-muted-foreground">
             {step.n}
           </span>
           {step.title}
         </h3>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground md:text-[13px]">
+        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground md:text-[15px]">
           {step.body}
         </p>
       </motion.div>

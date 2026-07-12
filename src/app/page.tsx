@@ -1,5 +1,4 @@
 import { IndexHeader } from "@/components/index/index-header";
-import { SectionBridge } from "@/components/index/section-bridge";
 import { ProductFlow } from "@/components/index/product-flow";
 import { VibeComputeCinematic } from "@/components/index/vibe-compute-cinematic";
 import { GemmaSection } from "@/components/index/gemma-section";
@@ -19,7 +18,6 @@ export default function LandingPage() {
       <main>
         {/* 1 — Hero: VIBE → AMD → agents (scroll story) */}
         <VibeComputeCinematic />
-        <SectionBridge />
         {/* 2 — Clarifies the product loop */}
         <ProductFlow />
         {/* 3 — Rest of the narrative */}

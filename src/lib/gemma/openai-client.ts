@@ -25,8 +25,11 @@ export type OpenAIClientConfig = {
 };
 
 export const OPENROUTER_DEFAULT_BASE = "https://openrouter.ai/api/v1";
-/** Free Gemma 4 31B on OpenRouter (good for always-on public demos). */
+/** Free Gemma models on OpenRouter (good for always-on public demos, fallback chain for rate limits). */
 export const OPENROUTER_GEMMA_FREE = "google/gemma-4-31b-it:free";
+export const OPENROUTER_GEMMA_FALLBACKS = [
+  "google/gemma-4-26b-a4b-it:free",
+];
 
 export const FIREWORKS_DEFAULT_BASE =
   "https://api.fireworks.ai/inference/v1";
@@ -67,6 +70,7 @@ export function getAmdConfigFromEnv(): OpenAIClientConfig {
 
   // 1) Fireworks first — intended hackathon path (Gemma on AMD via Fireworks)
   if (fireworksKey) {
+    console.log("[Gemma] → Fireworks (primary)", { model: fireworksModel, baseUrl: fireworksBase.replace(/\/\/.*@/, "//***@") });
     return {
       baseUrl: fireworksBase,
       apiKey: fireworksKey,
@@ -79,6 +83,7 @@ export function getAmdConfigFromEnv(): OpenAIClientConfig {
 
   // 2) OpenRouter free Gemma — online demo only when Fireworks credits/deploy unavailable
   if (openrouterKey) {
+    console.log("[Gemma] → OpenRouter (fallback)", { model: openrouterModel, baseUrl: openrouterBase });
     return {
       baseUrl: openrouterBase,
       apiKey: openrouterKey,
@@ -98,6 +103,7 @@ export function getAmdConfigFromEnv(): OpenAIClientConfig {
       : gemmaBase.includes("fireworks")
         ? "fireworks"
         : "amd_cloud";
+    console.log("[Gemma] → custom endpoint", { backend, baseUrl: gemmaBase.replace(/\/\/.*@/, "//***@") });
     return {
       baseUrl: gemmaBase,
       apiKey: gemmaKey,
@@ -108,6 +114,7 @@ export function getAmdConfigFromEnv(): OpenAIClientConfig {
     };
   }
 
+  console.log("[Gemma] → no live credentials, will use mock");
   return {
     baseUrl: "",
     apiKey: "",
@@ -153,6 +160,17 @@ export function extractAssistantText(message?: {
  * OpenAI-compatible chat.completions (OpenRouter / Fireworks / custom).
  * Never logs API keys.
  */
+/**
+ * Retryable 429 — free OpenRouter models are often rate-limited.
+ * Returns the fallback models to try for the given backend.
+ */
+function getModelFallbacks(cfg: OpenAIClientConfig): string[] {
+  if (cfg.backend === "openrouter") {
+    return OPENROUTER_GEMMA_FALLBACKS;
+  }
+  return [];
+}
+
 export async function openAIChatCompletion(
   messages: ChatMessage[],
   options?: {
@@ -161,109 +179,132 @@ export async function openAIChatCompletion(
     config?: Partial<OpenAIClientConfig>;
   }
 ): Promise<OpenAIChatResult> {
-  const cfg = { ...getAmdConfigFromEnv(), ...options?.config };
-  if (!cfg.baseUrl || !cfg.apiKey) {
+  const baseCfg = { ...getAmdConfigFromEnv(), ...options?.config };
+  if (!baseCfg.baseUrl || !baseCfg.apiKey) {
     throw new Error(
       "Gemma endpoint is not configured (set FIREWORKS_API_KEY or OPENROUTER_API_KEY fallback)"
     );
   }
 
-  const url = cfg.baseUrl.endsWith("/v1")
-    ? `${cfg.baseUrl}/chat/completions`
-    : cfg.baseUrl.includes("/chat/completions")
-      ? cfg.baseUrl
-      : `${cfg.baseUrl}/v1/chat/completions`;
+  const fallbacks = getModelFallbacks(baseCfg);
+  const modelsToTry = [baseCfg.model, ...fallbacks];
 
-  const start = Date.now();
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), cfg.timeoutMs);
-
-  try {
-    // Health pings pass small maxOutputTokens; chat keeps a floor of 1024.
-    const maxTokens =
-      cfg.maxOutputTokens > 0 && cfg.maxOutputTokens < 256
-        ? cfg.maxOutputTokens
-        : Math.max(cfg.maxOutputTokens || 1024, 1024);
-    const body: Record<string, unknown> = {
-      model: cfg.model,
-      messages,
-      temperature: options?.temperature ?? 0.3,
-      max_tokens: maxTokens,
-    };
-    // Fireworks Gemma 4 thinking toggles — skip on OpenRouter free path
-    if (cfg.backend === "fireworks" || cfg.backend === "amd_cloud") {
-      body.reasoning_effort = "none";
-      body.chat_template_kwargs = { enable_thinking: false };
-    }
-    if (options?.jsonMode) {
-      body.response_format = { type: "json_object" };
+  // Try each model in chain until one succeeds or all fail with non-429
+  let lastError: Error | null = null;
+  for (const model of modelsToTry) {
+    if (model !== baseCfg.model) {
+      console.log(`[Gemma] retrying with fallback model: ${model}`);
     }
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${cfg.apiKey}`,
-    };
-    // OpenRouter optional ranking headers
-    if (cfg.backend === "openrouter") {
-      headers["HTTP-Referer"] =
-        process.env.OPENROUTER_SITE_URL || "https://vibefunding.app";
-      headers["X-Title"] = process.env.OPENROUTER_SITE_NAME || "VibeFunding";
+    const cfg = { ...baseCfg, model };
+    const url = cfg.baseUrl.endsWith("/v1")
+      ? `${cfg.baseUrl}/chat/completions`
+      : cfg.baseUrl.includes("/chat/completions")
+        ? cfg.baseUrl
+        : `${cfg.baseUrl}/v1/chat/completions`;
+
+    const start = Date.now();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), cfg.timeoutMs);
+
+    try {
+      const maxTokens =
+        cfg.maxOutputTokens > 0 && cfg.maxOutputTokens < 256
+          ? cfg.maxOutputTokens
+          : Math.max(cfg.maxOutputTokens || 1024, 1024);
+      const body: Record<string, unknown> = {
+        model: cfg.model,
+        messages,
+        temperature: options?.temperature ?? 0.3,
+        max_tokens: maxTokens,
+      };
+      if (cfg.backend === "fireworks" || cfg.backend === "amd_cloud") {
+        body.reasoning_effort = "none";
+        body.chat_template_kwargs = { enable_thinking: false };
+      }
+      if (options?.jsonMode) {
+        body.response_format = { type: "json_object" };
+      }
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${cfg.apiKey}`,
+      };
+      if (cfg.backend === "openrouter") {
+        headers["HTTP-Referer"] =
+          process.env.OPENROUTER_SITE_URL || "https://vibefunding.app";
+        headers["X-Title"] =
+          process.env.OPENROUTER_SITE_NAME || "VibeFunding";
+      }
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      const requestId =
+        res.headers.get("x-request-id") ||
+        res.headers.get("x-inference-id") ||
+        undefined;
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        throw new Error(
+          `Gemma HTTP ${res.status}${
+            errText ? `: ${errText.slice(0, 200)}` : ""
+          }`
+        );
+      }
+
+      const data = (await res.json()) as {
+        id?: string;
+        model?: string;
+        choices?: {
+          message?: {
+            content?: string | null;
+            reasoning_content?: string | null;
+          };
+        }[];
+        usage?: { prompt_tokens?: number; completion_tokens?: number };
+      };
+
+      const content = extractAssistantText(data.choices?.[0]?.message);
+      if (!content) {
+        throw new Error("Gemma returned empty content");
+      }
+
+      return {
+        content,
+        model: data.model || cfg.model,
+        requestId: data.id || requestId,
+        latencyMs: Date.now() - start,
+        usage: {
+          promptTokens: data.usage?.prompt_tokens,
+          completionTokens: data.usage?.completion_tokens,
+        },
+      };
+    } catch (error) {
+      clearTimeout(timer);
+      if (error instanceof Error && error.name === "AbortError") {
+        lastError = new Error(`Gemma timeout after ${cfg.timeoutMs}ms`);
+        continue; // try next model on timeout
+      }
+      const message = error instanceof Error ? error.message : "";
+      // Only retry on 429 (rate limit) — other errors are permanent
+      if (/\b429\b/.test(message)) {
+        lastError = error as Error;
+        continue; // try next fallback model
+      }
+      throw error; // non-429 error is fatal
+    } finally {
+      clearTimeout(timer);
     }
-
-    const res = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-
-    const requestId =
-      res.headers.get("x-request-id") ||
-      res.headers.get("x-inference-id") ||
-      undefined;
-
-    if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      throw new Error(
-        `Gemma HTTP ${res.status}${errText ? `: ${errText.slice(0, 200)}` : ""}`
-      );
-    }
-
-    const data = (await res.json()) as {
-      id?: string;
-      model?: string;
-      choices?: {
-        message?: {
-          content?: string | null;
-          reasoning_content?: string | null;
-        };
-      }[];
-      usage?: { prompt_tokens?: number; completion_tokens?: number };
-    };
-
-    const content = extractAssistantText(data.choices?.[0]?.message);
-    if (!content) {
-      throw new Error("Gemma returned empty content");
-    }
-
-    return {
-      content,
-      model: data.model || cfg.model,
-      requestId: data.id || requestId,
-      latencyMs: Date.now() - start,
-      usage: {
-        promptTokens: data.usage?.prompt_tokens,
-        completionTokens: data.usage?.completion_tokens,
-      },
-    };
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new Error(`Gemma timeout after ${cfg.timeoutMs}ms`);
-    }
-    throw error;
-  } finally {
-    clearTimeout(timer);
   }
+
+  // All models exhausted
+  throw lastError || new Error("All Gemma models exhausted");
 }
 
 export type GemmaHealth = {
