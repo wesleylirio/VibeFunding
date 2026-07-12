@@ -13,8 +13,8 @@ import { ensureSeeded } from "@/lib/demo/ensure-seeded";
 import { INVESTOR_ID } from "@/lib/db/seed-data";
 
 /** Project ids the investor already funded (allocations or project holdings). */
-export function getInvestedProjectIds(investorId = INVESTOR_ID): Set<string> {
-  const portfolio = getPortfolio(investorId);
+export async function getInvestedProjectIds(investorId = INVESTOR_ID): Promise<Set<string>> {
+  const portfolio = await getPortfolio(investorId);
   const ids = new Set<string>();
   for (const a of portfolio.allocations) {
     if (a.projectId) ids.add(a.projectId);
@@ -31,8 +31,8 @@ export function getInvestedProjectIds(investorId = INVESTOR_ID): Set<string> {
 }
 
 /** Project slugs already funded — for Gemma discover filtering. */
-export function getInvestedProjectSlugs(investorId = INVESTOR_ID): Set<string> {
-  const portfolio = getPortfolio(investorId);
+export async function getInvestedProjectSlugs(investorId = INVESTOR_ID): Promise<Set<string>> {
+  const portfolio = await getPortfolio(investorId);
   const slugs = new Set<string>();
   for (const a of portfolio.allocations) {
     if (a.project?.slug) slugs.add(a.project.slug);
@@ -48,8 +48,8 @@ export function getInvestedProjectSlugs(investorId = INVESTOR_ID): Set<string> {
   return slugs;
 }
 
-export function getPortfolio(investorId = INVESTOR_ID) {
-  ensureSeeded();
+export async function getPortfolio(investorId = INVESTOR_ID) {
+  await ensureSeeded();
   const db = getDb();
   const investor = db.select().from(users).where(eq(users.id, investorId)).get();
 

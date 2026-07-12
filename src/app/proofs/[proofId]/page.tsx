@@ -22,8 +22,8 @@ export default async function ProofPage({
 }) {
   const { proofId } = await params;
   const juror = await requireJuror(`/proofs/${proofId}`);
-  const session = getDemoSession();
-  const portfolio = getPortfolio(session.investorId);
+  const session = await getDemoSession();
+  const portfolio = await getPortfolio(session.investorId);
   const proof = getProofById(proofId);
   if (!proof) notFound();
 

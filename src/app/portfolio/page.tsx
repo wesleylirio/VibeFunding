@@ -17,8 +17,8 @@ export const dynamic = "force-dynamic";
 
 export default async function PortfolioPage() {
   const juror = await requireJuror("/portfolio");
-  const session = getDemoSession();
-  const portfolio = getPortfolio(session.investorId);
+  const session = await getDemoSession();
+  const portfolio = await getPortfolio(session.investorId);
 
   const categoryData = Object.entries(portfolio.byCategory).map(([name, value]) => ({
     name,

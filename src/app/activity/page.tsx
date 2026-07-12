@@ -12,8 +12,8 @@ export const dynamic = "force-dynamic";
 
 export default async function ActivityPage() {
   const juror = await requireJuror("/activity");
-  const session = getDemoSession();
-  const portfolio = getPortfolio(session.investorId);
+  const session = await getDemoSession();
+  const portfolio = await getPortfolio(session.investorId);
 
   return (
     <AppShell

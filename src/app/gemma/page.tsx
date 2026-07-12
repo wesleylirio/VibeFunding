@@ -17,8 +17,8 @@ export const dynamic = "force-dynamic";
 
 export default async function GemmaPage() {
   const juror = await requireJuror("/gemma");
-  const session = getDemoSession();
-  const portfolio = getPortfolio(session.investorId);
+  const session = await getDemoSession();
+  const portfolio = await getPortfolio(session.investorId);
   const gateway = getGemmaGateway();
   const briefing = await gateway.analyzePortfolio({
     investorId: session.investorId,

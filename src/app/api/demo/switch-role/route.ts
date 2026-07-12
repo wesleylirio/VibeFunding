@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   try {
     const json = await request.json();
     const body = bodySchema.parse(json);
-    const session = switchDemoRole(body.role);
+    const session = await switchDemoRole(body.role);
     const juror = await getJurorSession();
     const res = NextResponse.json({
       ok: true,

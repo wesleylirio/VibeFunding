@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    ensureSeeded();
+    await ensureSeeded();
     return NextResponse.json(
       {
         status: "ok",

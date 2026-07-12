@@ -127,7 +127,7 @@ export class AmdGemmaGateway implements GemmaGateway {
   }
 
   async chat(input: GemmaChatInput): Promise<GemmaResponse> {
-    const payload = buildChatContextPayload({
+    const payload = await buildChatContextPayload({
       context: input.context,
       projectId: input.projectId,
       projectSlug: input.projectSlug,
@@ -184,7 +184,7 @@ Answer using only the provided JSON context. Keep under 220 words unless asked f
   }
 
   async analyzeProject(input: ProjectAnalysisInput): Promise<GemmaInsight> {
-    const ctx = buildProjectContext(input);
+    const ctx = await buildProjectContext(input);
     if (!ctx) {
       return {
         title: "Project not found",
@@ -211,8 +211,8 @@ Answer using only the provided JSON context. Keep under 220 words unless asked f
     // Enrich context with investor portfolio data
     const enrichment: Record<string, unknown> = {};
     if (input.investorId) {
-      const portfolio = getPortfolio(input.investorId);
-      const investedSlugs = getInvestedProjectSlugs(input.investorId);
+      const portfolio = await getPortfolio(input.investorId);
+      const investedSlugs = await getInvestedProjectSlugs(input.investorId);
       enrichment.alreadyInvestedSlugs = [...investedSlugs];
       enrichment.isAlreadyInvested = investedSlugs.has(ctx.slug);
       enrichment.userPortfolio = {
@@ -327,7 +327,7 @@ opportunitySuggestions (string[]), sources (string[]).`;
   }
 
   async summarizeProof(input: ProofSummaryInput): Promise<GemmaInsight> {
-    const ctx = buildProofContext(input.proofId);
+    const ctx = await buildProofContext(input.proofId);
     if (!ctx) {
       return {
         title: "Proof not found",
@@ -388,7 +388,7 @@ whatWasFunded, whatWasProduced, whatEvidenceExists, whatRemainsUnverified, sourc
   }
 
   async assistFounder(input: FounderAssistInput): Promise<FounderAssistResponse> {
-    const ctx = buildStakeholderContext({
+    const ctx = await buildStakeholderContext({
       projectId: input.projectId,
       buildRoundId: input.buildRoundId,
       notes: input.draft,

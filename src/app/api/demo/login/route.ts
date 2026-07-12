@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
     // Product surface is Investor-first; Founder Mode is not open yet.
     const role = "INVESTOR" as const;
-    switchDemoRole(role);
+    await switchDemoRole(role);
 
     const session = {
       loggedIn: true,

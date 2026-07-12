@@ -38,8 +38,8 @@ export default async function DiscoverPage({
   const showFilters = params.filters === "1";
   const verifiedOnly = params.verified === "1";
 
-  const session = getDemoSession();
-  const portfolio = getPortfolio(session.investorId);
+  const session = await getDemoSession();
+  const portfolio = await getPortfolio(session.investorId);
   const prefs = juror.investorPreferences;
   const onboarding = !prefs;
 
@@ -75,8 +75,8 @@ export default async function DiscoverPage({
   const stages = getStages();
 
   // Never re-suggest projects the investor already funded
-  const investedIds = getInvestedProjectIds(session.investorId);
-  const investedSlugs = getInvestedProjectSlugs(session.investorId);
+  const investedIds = await getInvestedProjectIds(session.investorId);
+  const investedSlugs = await getInvestedProjectSlugs(session.investorId);
 
   const gemmaMatches = rankProjectMatches(allItems, prefs, {
     excludeIds: investedIds,

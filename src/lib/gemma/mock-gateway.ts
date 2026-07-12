@@ -34,7 +34,7 @@ function baseInsight(
 
 export class MockGemmaGateway implements GemmaGateway {
   async chat(input: GemmaChatInput): Promise<GemmaResponse> {
-    ensureSeeded();
+    await ensureSeeded();
     const start = Date.now();
     const lower = input.message.toLowerCase();
 
@@ -105,7 +105,7 @@ export class MockGemmaGateway implements GemmaGateway {
     ) {
       content = await discoveryMatchesText();
     } else if (lower.includes("compare")) {
-      const held = [...getInvestedProjectSlugs()];
+      const held = [...await getInvestedProjectSlugs()];
       const skip = held.length
         ? ` You already hold exposure in ${held.join(", ")} — I won't re-pitch those.`
         : "";
@@ -135,7 +135,7 @@ What would you like to examine?`;
   }
 
   async analyzeProject(input: { projectId: string; investorId?: string }): Promise<GemmaInsight> {
-    ensureSeeded();
+    await ensureSeeded();
     const db = getDb();
     const cached = db
       .select()
@@ -180,7 +180,7 @@ What would you like to examine?`;
       .where(eq(buildRounds.projectId, project.id))
       .all();
 
-    const alreadyInvestedSlugs = input.investorId ? [...getInvestedProjectSlugs(input.investorId)] : [];
+    const alreadyInvestedSlugs = input.investorId ? [...await getInvestedProjectSlugs(input.investorId)] : [];
     const isAlreadyInvested = alreadyInvestedSlugs.includes(project.slug);
 
     const activeRound = rounds.find((r) => r.status === "OPEN" || r.status === "BUILDING");
@@ -255,7 +255,7 @@ What would you like to examine?`;
   }
 
   async analyzePortfolio(input?: { investorId: string }): Promise<GemmaInsight> {
-    ensureSeeded();
+    await ensureSeeded();
     const investorId = input?.investorId || "user-investor-demo";
     const db = getDb();
     const cached = db
@@ -277,7 +277,7 @@ What would you like to examine?`;
       };
     }
 
-    const portfolio = getPortfolio(investorId);
+    const portfolio = await getPortfolio(investorId);
     const tokens = portfolio.tokenHoldings;
     const nfts = portfolio.nftHoldings;
     const byCategory = portfolio.byCategory;
@@ -324,7 +324,7 @@ What would you like to examine?`;
   }
 
   async summarizeProof(input: { proofId: string }): Promise<GemmaInsight> {
-    ensureSeeded();
+    await ensureSeeded();
     const db = getDb();
     const proof = db
       .select()
@@ -389,7 +389,7 @@ What would you like to examine?`;
     mode: "review" | "stakeholder-update" | "clarity";
     draft?: string;
   }): Promise<FounderAssistResponse> {
-    ensureSeeded();
+    await ensureSeeded();
     const start = Date.now();
     const db = getDb();
     const project = db
@@ -467,7 +467,7 @@ function resolveProject(projectId?: string, projectSlug?: string) {
 }
 
 async function discoveryMatchesText(): Promise<string> {
-  const held = getInvestedProjectSlugs();
+  const held = await getInvestedProjectSlugs();
   const prefs = (await getJurorSession()).investorPreferences;
   if (!prefs) {
     return "Complete the preference questions on Discover and I’ll match open Build Rounds. I never re-suggest projects you already invested in.";
@@ -475,7 +475,7 @@ async function discoveryMatchesText(): Promise<string> {
   const { items } = listProjects({ sort: "TRENDING", limit: 24 });
   const matches = rankProjectMatches(items, prefs, {
     excludeSlugs: held,
-    excludeIds: getInvestedProjectIds(),
+    excludeIds: await getInvestedProjectIds(),
   }).slice(0, 3);
 
   if (matches.length === 0) {

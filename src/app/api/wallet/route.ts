@@ -5,7 +5,7 @@ import { INVESTOR_ID } from "@/lib/db/seed-data";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const portfolio = getPortfolio(INVESTOR_ID);
+  const portfolio = await getPortfolio(INVESTOR_ID);
   const pending = portfolio.allocations
     .filter((a) => a.settlementStatus === "PENDING_VERIFICATION")
     .map((a) => ({

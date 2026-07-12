@@ -39,7 +39,7 @@ export async function PATCH(request: Request) {
     }
 
     if (body.role) {
-      switchDemoRole(body.role);
+      await switchDemoRole(body.role);
       current.role = body.role;
     }
     if (typeof body.onboardingSeen === "boolean") {

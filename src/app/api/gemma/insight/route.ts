@@ -40,7 +40,7 @@ const schema = z.object({
  */
 export async function POST(request: Request) {
   try {
-    ensureSeeded();
+    await ensureSeeded();
     const body = schema.parse(await request.json());
     const juror = await getJurorSession();
     if (!juror.loggedIn) {
@@ -136,9 +136,9 @@ async function buildProactiveInsight(input: {
   if (context === "GLOBAL_DISCOVERY") {
     const juror = await getJurorSession();
     const prefs = juror.investorPreferences;
-    const session = getDemoSession();
-    const investedIds = getInvestedProjectIds(session.investorId);
-    const investedSlugs = getInvestedProjectSlugs(session.investorId);
+    const session = await getDemoSession();
+    const investedIds = await getInvestedProjectIds(session.investorId);
+    const investedSlugs = await getInvestedProjectSlugs(session.investorId);
 
     if (prefs) {
       const { items } = listProjects({ sort: "TRENDING", limit: 24 });

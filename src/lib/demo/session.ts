@@ -6,8 +6,8 @@ import { ensureSeeded } from "@/lib/demo/ensure-seeded";
 
 export type DemoRole = "INVESTOR" | "FOUNDER";
 
-export function getDemoSession() {
-  ensureSeeded();
+export async function getDemoSession() {
+  await ensureSeeded();
   const db = getDb();
   let state = db.select().from(demoState).where(eq(demoState.id, "default")).get();
   if (!state) {
@@ -35,8 +35,8 @@ export function getDemoSession() {
   };
 }
 
-export function switchDemoRole(role: DemoRole) {
-  ensureSeeded();
+export async function switchDemoRole(role: DemoRole) {
+  await ensureSeeded();
   const db = getDb();
   const activeUserId = role === "FOUNDER" ? FOUNDER_ID : INVESTOR_ID;
   db.update(demoState)

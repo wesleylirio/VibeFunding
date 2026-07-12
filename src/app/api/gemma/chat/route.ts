@@ -46,7 +46,7 @@ function rateLimit(ip: string) {
 
 export async function POST(request: Request) {
   try {
-    ensureSeeded();
+    await ensureSeeded();
     const ip = request.headers.get("x-forwarded-for") || "local";
     if (!rateLimit(ip)) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });

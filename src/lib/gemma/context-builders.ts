@@ -16,13 +16,13 @@ import { getProjectBySlug } from "@/lib/queries/projects";
 import { INVESTOR_ID } from "@/lib/db/seed-data";
 
 /** Minimal portfolio context for live Gemma — no secrets, no private agent payloads. */
-export function buildPortfolioContext(input: {
+export async function buildPortfolioContext(input: {
   investorId?: string;
   displayName?: string;
 }) {
   ensureSeeded();
   const investorId = input.investorId || INVESTOR_ID;
-  const portfolio = getPortfolio(investorId);
+  const portfolio = await getPortfolio(investorId);
   const pending = portfolio.allocations.filter(
     (a) => a.settlementStatus === "PENDING_VERIFICATION"
   );
@@ -70,11 +70,11 @@ export function buildPortfolioContext(input: {
   };
 }
 
-export function buildProjectContext(input: {
+export async function buildProjectContext(input: {
   projectId?: string;
   projectSlug?: string;
 }) {
-  ensureSeeded();
+  await ensureSeeded();
   const db = getDb();
   let project =
     input.projectSlug != null
@@ -149,8 +149,8 @@ export function buildProjectContext(input: {
   };
 }
 
-export function buildProofContext(proofId: string) {
-  ensureSeeded();
+export async function buildProofContext(proofId: string) {
+  await ensureSeeded();
   const proof = getProofById(proofId);
   if (!proof) return null;
   return {
@@ -191,12 +191,12 @@ export function buildProofContext(proofId: string) {
   };
 }
 
-export function buildStakeholderContext(input: {
+export async function buildStakeholderContext(input: {
   projectId: string;
   buildRoundId?: string;
   notes?: string;
 }) {
-  ensureSeeded();
+  await ensureSeeded();
   const db = getDb();
   const project = db
     .select()
@@ -283,7 +283,7 @@ export function buildQuickstartPromptContext(input: {
   };
 }
 
-export function buildChatContextPayload(input: {
+export async function buildChatContextPayload(input: {
   context: string;
   projectId?: string;
   projectSlug?: string;
@@ -304,11 +304,11 @@ export function buildChatContextPayload(input: {
     input.context === "PROJECT_DILIGENCE" ||
     input.context === "BUILD_ROUND_ANALYSIS"
   ) {
-    base.portfolio = buildPortfolioContext({
+    base.portfolio = await buildPortfolioContext({
       displayName: input.displayName,
     });
     // Gemma must not re-suggest these for new investment
-    base.alreadyInvestedSlugs = [...getInvestedProjectSlugs(INVESTOR_ID)];
+    base.alreadyInvestedSlugs = [...await getInvestedProjectSlugs(INVESTOR_ID)];
   }
   if (
     input.projectId ||
@@ -317,14 +317,14 @@ export function buildChatContextPayload(input: {
     input.context.includes("BUILD_ROUND") ||
     input.context.includes("FOUNDER")
   ) {
-    base.project = buildProjectContext({
+    base.project = await buildProjectContext({
       projectId: input.projectId,
       projectSlug: input.projectSlug,
     });
   }
   if (input.proofId || input.context === "PROOF_OF_BUILD") {
     if (input.proofId) {
-      base.proof = buildProofContext(input.proofId);
+      base.proof = await buildProofContext(input.proofId);
     }
   }
   return base;
