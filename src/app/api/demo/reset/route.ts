@@ -5,10 +5,10 @@ export const dynamic = "force-dynamic";
 
 export async function POST() {
   try {
-    const result = resetDemo();
+    const result = await resetDemo();
     // Clear seed flag so ensureSeeded re-checks
     const g = globalThis as unknown as { __vfSeeded?: boolean };
-    g.__vfSeeded = true;
+    g.__vfSeeded = false;
     return NextResponse.json({ ok: true, result });
   } catch (error) {
     return NextResponse.json(
