@@ -148,12 +148,6 @@ Copy `.env.example` → `.env`. **Never commit real keys.**
 
 ---
 
-## Hackathon submission
-
-See **[docs/HACKATHON.md](./docs/HACKATHON.md)** for LabLab requirements (video, public repo, Docker, demo URL) and how that differs from in-app **Proof of Build** evidence.
-
----
-
 ## License
 
 MIT · see [LICENSE](./LICENSE).
