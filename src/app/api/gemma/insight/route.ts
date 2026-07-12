@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     let projectName: string | undefined;
     if (body.projectSlug) {
       const db = getDb();
-      const project = db
+      const project = await db
         .select()
         .from(projects)
         .where(eq(projects.slug, body.projectSlug))

@@ -17,28 +17,28 @@ export type AuthorRole =
   | "COMPUTE_PROVIDER"
   | "TOKEN_HOLDER";
 
-export function getCommunityFeed(projectId: string) {
-  ensureSeeded();
+export async function getCommunityFeed(projectId: string) {
+  await ensureSeeded();
   const db = getDb();
-  const posts = db
+  const postRows = await db
     .select()
     .from(communityPosts)
     .where(eq(communityPosts.projectId, projectId))
     .orderBy(desc(communityPosts.createdAt))
-    .all()
-    .map((post) => {
-      const comments = db
+    .all();
+  const posts = await Promise.all(postRows.map(async (post) => {
+      const comments = await db
         .select()
         .from(communityComments)
         .where(eq(communityComments.postId, post.id))
         .orderBy(desc(communityComments.createdAt))
         .all();
       return { ...post, comments };
-    });
+    }));
   return posts;
 }
 
-export function createCommunityPost(input: {
+export async function createCommunityPost(input: {
   projectId: string;
   authorName: string;
   authorRole: AuthorRole;
@@ -47,9 +47,9 @@ export function createCommunityPost(input: {
   proofId?: string;
   agentRunId?: string;
 }) {
-  ensureSeeded();
+  await ensureSeeded();
   const db = getDb();
-  const project = db
+  const project = await db
     .select()
     .from(projects)
     .where(eq(projects.id, input.projectId))
@@ -59,7 +59,7 @@ export function createCommunityPost(input: {
 
   const id = `cpost-${nanoid(10)}`;
   const createdAt = nowIso();
-  db.insert(communityPosts)
+  await db.insert(communityPosts)
     .values({
       id,
       projectId: input.projectId,
@@ -74,18 +74,18 @@ export function createCommunityPost(input: {
       createdAt,
     })
     .run();
-  return db.select().from(communityPosts).where(eq(communityPosts.id, id)).get()!;
+  return (await db.select().from(communityPosts).where(eq(communityPosts.id, id)).get())!;
 }
 
-export function addCommunityComment(input: {
+export async function addCommunityComment(input: {
   postId: string;
   authorName: string;
   authorRole: AuthorRole;
   body: string;
 }) {
-  ensureSeeded();
+  await ensureSeeded();
   const db = getDb();
-  const post = db
+  const post = await db
     .select()
     .from(communityPosts)
     .where(eq(communityPosts.id, input.postId))
@@ -94,7 +94,7 @@ export function addCommunityComment(input: {
   if (!input.body.trim()) throw new Error("Comment body required");
 
   const id = `ccom-${nanoid(10)}`;
-  db.insert(communityComments)
+  await db.insert(communityComments)
     .values({
       id,
       postId: input.postId,
@@ -104,28 +104,28 @@ export function addCommunityComment(input: {
       createdAt: nowIso(),
     })
     .run();
-  return db
+  return (await db
     .select()
     .from(communityComments)
     .where(eq(communityComments.id, id))
-    .get()!;
+    .get())!;
 }
 
-export function reactToPost(input: {
+export async function reactToPost(input: {
   postId: string;
   reactorKey: string;
   reaction: "LIKE" | "DISLIKE";
 }) {
-  ensureSeeded();
+  await ensureSeeded();
   const db = getDb();
-  const post = db
+  const post = await db
     .select()
     .from(communityPosts)
     .where(eq(communityPosts.id, input.postId))
     .get();
   if (!post) throw new Error("Post not found");
 
-  const existing = db
+  const existing = await db
     .select()
     .from(communityReactions)
     .where(
@@ -143,11 +143,11 @@ export function reactToPost(input: {
     if (existing.reaction === "LIKE") likes = Math.max(0, likes - 1);
     if (existing.reaction === "DISLIKE") dislikes = Math.max(0, dislikes - 1);
     if (existing.reaction === input.reaction) {
-      db.delete(communityReactions)
+      await db.delete(communityReactions)
         .where(eq(communityReactions.id, existing.id))
         .run();
     } else {
-      db.update(communityReactions)
+      await db.update(communityReactions)
         .set({ reaction: input.reaction })
         .where(eq(communityReactions.id, existing.id))
         .run();
@@ -155,7 +155,7 @@ export function reactToPost(input: {
       else dislikes += 1;
     }
   } else {
-    db.insert(communityReactions)
+    await db.insert(communityReactions)
       .values({
         id: `creact-${nanoid(10)}`,
         postId: input.postId,
@@ -168,14 +168,14 @@ export function reactToPost(input: {
     else dislikes += 1;
   }
 
-  db.update(communityPosts)
+  await db.update(communityPosts)
     .set({ likes, dislikes })
     .where(eq(communityPosts.id, input.postId))
     .run();
 
-  return db
+  return (await db
     .select()
     .from(communityPosts)
     .where(eq(communityPosts.id, input.postId))
-    .get()!;
+    .get())!;
 }

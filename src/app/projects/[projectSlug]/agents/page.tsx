@@ -24,8 +24,8 @@ export default async function ProjectAgentsPage({
   const project = await getProjectBySlug(projectSlug);
   if (!project) notFound();
 
-  const bundle = getRunByProjectSlug(projectSlug, juror.role);
-  const runs = listProjectRuns(project.id);
+  const bundle = await getRunByProjectSlug(projectSlug, juror.role);
+  const runs = await listProjectRuns(project.id);
   const round = project.rounds.find((r) => r.id === bundle?.run?.buildRoundId);
 
   return (

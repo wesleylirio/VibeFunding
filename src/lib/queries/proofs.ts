@@ -10,34 +10,34 @@ import {
 } from "@/lib/db/schema";
 import { ensureSeeded } from "@/lib/demo/ensure-seeded";
 
-export function getProofById(proofId: string) {
-  ensureSeeded();
+export async function getProofById(proofId: string) {
+  await ensureSeeded();
   const db = getDb();
-  const proof = db
+  const proof = await db
     .select()
     .from(proofsOfBuild)
     .where(eq(proofsOfBuild.id, proofId))
     .get();
   if (!proof) return null;
 
-  const project = db
+  const project = await db
     .select()
     .from(projects)
     .where(eq(projects.id, proof.projectId))
     .get();
   const round = proof.buildRoundId
-    ? db
+    ? await db
         .select()
         .from(buildRounds)
         .where(eq(buildRounds.id, proof.buildRoundId))
         .get()
     : null;
-  const run = db
+  const run = await db
     .select()
     .from(agentRuns)
     .where(eq(agentRuns.id, proof.agentRunId))
     .get();
-  const artifacts = db
+  const artifacts = await db
     .select()
     .from(proofArtifacts)
     .where(eq(proofArtifacts.proofId, proofId))

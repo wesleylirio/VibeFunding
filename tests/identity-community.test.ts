@@ -140,7 +140,7 @@ describe("community reactions", () => {
 
   it("supports post, like, dislike, comment", async () => {
     const community = await import("../src/lib/queries/community");
-    const post = community.createCommunityPost({
+    const post = await community.createCommunityPost({
       projectId: "proj-collabmesh",
       authorName: "Wesley Kennedy",
       authorRole: "INVESTOR",
@@ -148,21 +148,21 @@ describe("community reactions", () => {
     });
     expect(post.id).toBeTruthy();
 
-    const liked = community.reactToPost({
+    const liked = await community.reactToPost({
       postId: post.id,
       reactorKey: "juror:Wesley",
       reaction: "LIKE",
     });
     expect(liked.likes).toBe(1);
 
-    const disliked = community.reactToPost({
+    const disliked = await community.reactToPost({
       postId: post.id,
       reactorKey: "juror:Other",
       reaction: "DISLIKE",
     });
     expect(disliked.dislikes).toBe(1);
 
-    const comment = community.addCommunityComment({
+    const comment = await community.addCommunityComment({
       postId: post.id,
       authorName: "Maya Chen",
       authorRole: "FOUNDER",
@@ -170,7 +170,7 @@ describe("community reactions", () => {
     });
     expect(comment.body).toContain("Welcome");
 
-    const feed = community.getCommunityFeed("proj-collabmesh");
+    const feed = await community.getCommunityFeed("proj-collabmesh");
     const found = feed.find((p) => p.id === post.id);
     expect(found?.comments.length).toBeGreaterThan(0);
   });

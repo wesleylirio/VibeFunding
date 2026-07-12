@@ -36,7 +36,7 @@ export default async function CommunityPage({
     redirect(`/projects/${project.slug}`);
   }
 
-  const posts = getCommunityFeed(project.id);
+  const posts = await getCommunityFeed(project.id);
 
   return (
     <AppShell

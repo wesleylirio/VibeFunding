@@ -80,7 +80,7 @@ describe("seed and allocate", () => {
     });
 
     expect(result.proofId).toMatch(/^proof-/);
-    const proof = getProofById(result.proofId);
+    const proof = await getProofById(result.proofId);
     expect(proof?.project?.slug).toBe("auditforge");
     expect(proof?.run?.status).toBe("COMPLETED");
     expect(proof?.artifacts.length).toBeGreaterThan(0);

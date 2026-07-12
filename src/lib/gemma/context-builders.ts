@@ -81,7 +81,7 @@ export async function buildProjectContext(input: {
       ? await getProjectBySlug(input.projectSlug)
       : null;
   if (!project && input.projectId) {
-    const row = db
+    const row = await db
       .select()
       .from(projects)
       .where(eq(projects.id, input.projectId))
@@ -151,7 +151,7 @@ export async function buildProjectContext(input: {
 
 export async function buildProofContext(proofId: string) {
   await ensureSeeded();
-  const proof = getProofById(proofId);
+  const proof = await getProofById(proofId);
   if (!proof) return null;
   return {
     taskTitle: proof.taskTitle,
@@ -198,14 +198,14 @@ export async function buildStakeholderContext(input: {
 }) {
   await ensureSeeded();
   const db = getDb();
-  const project = db
+  const project = await db
     .select()
     .from(projects)
     .where(eq(projects.id, input.projectId))
     .get();
   if (!project) return null;
 
-  const rounds = db
+  const rounds = await db
     .select()
     .from(buildRounds)
     .where(eq(buildRounds.projectId, input.projectId))
@@ -215,20 +215,20 @@ export async function buildStakeholderContext(input: {
     ? rounds.find((r) => r.id === input.buildRoundId)
     : rounds[0];
 
-  const runs = db
+  const runs = (await db
     .select()
     .from(agentRuns)
     .where(eq(agentRuns.projectId, input.projectId))
     .orderBy(desc(agentRuns.createdAt))
-    .all()
+    .all())
     .slice(0, 3);
 
-  const proofs = db
+  const proofs = (await db
     .select()
     .from(proofsOfBuild)
     .where(eq(proofsOfBuild.projectId, input.projectId))
     .orderBy(desc(proofsOfBuild.createdAt))
-    .all()
+    .all())
     .slice(0, 3);
 
   return {

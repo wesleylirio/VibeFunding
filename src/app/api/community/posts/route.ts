@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   if (!projectId) {
     return NextResponse.json({ error: "projectId required" }, { status: 400 });
   }
-  return NextResponse.json({ posts: getCommunityFeed(projectId) });
+  return NextResponse.json({ posts: await getCommunityFeed(projectId) });
 }
 
 const postSchema = z.object({
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      const post = createCommunityPost({
+      const post = await createCommunityPost({
         projectId: body.projectId,
         authorName,
         authorRole: body.authorRole || defaultRole,
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      const comment = addCommunityComment({
+      const comment = await addCommunityComment({
         postId: body.postId,
         authorName,
         authorRole: body.authorRole || defaultRole,
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
       const reactorKey = juror.loggedIn
         ? `juror:${juror.displayName}`
         : "guest";
-      const post = reactToPost({
+      const post = await reactToPost({
         postId: body.postId,
         reactorKey,
         reaction: body.reaction,

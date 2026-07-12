@@ -51,7 +51,7 @@ export class MockGemmaGateway implements GemmaGateway {
       lower.includes("diligence")
     ) {
       if (input.projectId || input.projectSlug) {
-        const project = resolveProject(input.projectId, input.projectSlug);
+        const project = await resolveProject(input.projectId, input.projectSlug);
         if (project) {
           insight = await this.analyzeProject({ projectId: project.id });
           content = `${insight.title}\n\n${insight.summary}`;
@@ -137,7 +137,7 @@ What would you like to examine?`;
   async analyzeProject(input: { projectId: string; investorId?: string }): Promise<GemmaInsight> {
     await ensureSeeded();
     const db = getDb();
-    const cached = db
+    const cached = await db
       .select()
       .from(gemmaInsights)
       .where(eq(gemmaInsights.projectId, input.projectId))
@@ -156,7 +156,7 @@ What would you like to examine?`;
       };
     }
 
-    const project = db
+    const project = await db
       .select()
       .from(projects)
       .where(eq(projects.id, input.projectId))
@@ -169,12 +169,12 @@ What would you like to examine?`;
     }
 
     const risks = JSON.parse(project.risks) as string[];
-    const proofs = db
+    const proofs = await db
       .select()
       .from(proofsOfBuild)
       .where(eq(proofsOfBuild.projectId, project.id))
       .all();
-    const rounds = db
+    const rounds = await db
       .select()
       .from(buildRounds)
       .where(eq(buildRounds.projectId, project.id))
@@ -306,7 +306,7 @@ What would you like to examine?`;
   async summarizeProof(input: { proofId: string }): Promise<GemmaInsight> {
     await ensureSeeded();
     const db = getDb();
-    const proof = db
+    const proof = await db
       .select()
       .from(proofsOfBuild)
       .where(eq(proofsOfBuild.id, input.proofId))
@@ -372,7 +372,7 @@ What would you like to examine?`;
     await ensureSeeded();
     const start = Date.now();
     const db = getDb();
-    const project = db
+    const project = await db
       .select()
       .from(projects)
       .where(eq(projects.id, input.projectId))
@@ -435,20 +435,26 @@ Continue allocating VIBE or compute to keep the next milestone funded.
   }
 }
 
-function resolveProject(projectId?: string, projectSlug?: string) {
+async function resolveProject(projectId?: string, projectSlug?: string) {
   const db = getDb();
   if (projectId) {
-    return db.select().from(projects).where(eq(projects.id, projectId)).get();
+    return await db.select().from(projects).where(eq(projects.id, projectId)).get();
   }
   if (projectSlug) {
-    return db.select().from(projects).where(eq(projects.slug, projectSlug)).get();
+    return await db.select().from(projects).where(eq(projects.slug, projectSlug)).get();
   }
   return null;
 }
 
 async function discoveryMatchesText(): Promise<string> {
   const held = await getInvestedProjectSlugs();
-  const prefs = (await getJurorSession()).investorPreferences;
+  let prefs = null;
+  try {
+    prefs = (await getJurorSession()).investorPreferences;
+  } catch {
+    // The mock gateway is also used by request-less tests and scripts.
+    // In those contexts there is no Next.js cookie store.
+  }
   if (!prefs) {
     return "Complete the preference questions on Discover and I’ll match open Build Rounds. I never re-suggest projects you already invested in.";
   }
@@ -479,7 +485,7 @@ async function discoveryMatchesText(): Promise<string> {
 async function explainBuildRound(input: GemmaChatInput) {
   const db = getDb();
   if (input.buildRoundId) {
-    const round = db
+    const round = await db
       .select()
       .from(buildRounds)
       .where(eq(buildRounds.id, input.buildRoundId))
@@ -492,9 +498,9 @@ async function explainBuildRound(input: GemmaChatInput) {
       return `**${round.title}** is ${round.status} at ~${progress}% of its funding target.\n\nObjective: ${round.objective}\n\nGemma does not allocate funds for you — confirmation always stays with the investor.`;
     }
   }
-  const project = resolveProject(input.projectId, input.projectSlug);
+  const project = await resolveProject(input.projectId, input.projectSlug);
   if (project) {
-    const round = db
+    const round = await db
       .select()
       .from(buildRounds)
       .where(eq(buildRounds.projectId, project.id))

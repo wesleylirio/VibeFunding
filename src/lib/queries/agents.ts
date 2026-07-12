@@ -4,24 +4,24 @@ import { agentEvents, agentRuns, projects, proofsOfBuild } from "@/lib/db/schema
 import { ensureSeeded } from "@/lib/demo/ensure-seeded";
 import type { DemoRole } from "@/lib/types";
 
-export function getRunWithEvents(runId: string, role: DemoRole = "INVESTOR") {
-  ensureSeeded();
+export async function getRunWithEvents(runId: string, role: DemoRole = "INVESTOR") {
+  await ensureSeeded();
   const db = getDb();
-  const run = db.select().from(agentRuns).where(eq(agentRuns.id, runId)).get();
+  const run = await db.select().from(agentRuns).where(eq(agentRuns.id, runId)).get();
   if (!run) return null;
 
-  const project = db
+  const project = await db
     .select()
     .from(projects)
     .where(eq(projects.id, run.projectId))
     .get();
 
-  const events = db
+  const events = (await db
     .select()
     .from(agentEvents)
     .where(eq(agentEvents.runId, runId))
     .orderBy(asc(agentEvents.sequence))
-    .all()
+    .all())
     .filter((e) => {
       if (role === "FOUNDER") return true;
       if (e.visibility === "FOUNDER_ONLY") return false;
@@ -35,7 +35,7 @@ export function getRunWithEvents(runId: string, role: DemoRole = "INVESTOR") {
           : undefined,
     }));
 
-  const proof = db
+  const proof = await db
     .select()
     .from(proofsOfBuild)
     .where(eq(proofsOfBuild.agentRunId, runId))
@@ -44,10 +44,10 @@ export function getRunWithEvents(runId: string, role: DemoRole = "INVESTOR") {
   return { run, project, events, proof };
 }
 
-export function listProjectRuns(projectId: string) {
-  ensureSeeded();
+export async function listProjectRuns(projectId: string) {
+  await ensureSeeded();
   const db = getDb();
-  return db
+  return await db
     .select()
     .from(agentRuns)
     .where(eq(agentRuns.projectId, projectId))
@@ -55,17 +55,17 @@ export function listProjectRuns(projectId: string) {
     .all();
 }
 
-export function getRunByProjectSlug(slug: string, role: DemoRole = "INVESTOR") {
-  ensureSeeded();
+export async function getRunByProjectSlug(slug: string, role: DemoRole = "INVESTOR") {
+  await ensureSeeded();
   const db = getDb();
-  const project = db.select().from(projects).where(eq(projects.slug, slug)).get();
+  const project = await db.select().from(projects).where(eq(projects.slug, slug)).get();
   if (!project) return null;
-  const run = db
+  const run = await db
     .select()
     .from(agentRuns)
     .where(eq(agentRuns.projectId, project.id))
     .orderBy(desc(agentRuns.createdAt))
     .get();
   if (!run) return { project, run: null, events: [], proof: null };
-  return getRunWithEvents(run.id, role);
+  return await getRunWithEvents(run.id, role);
 }

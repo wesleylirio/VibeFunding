@@ -24,12 +24,12 @@ export default async function ProofPage({
   const juror = await requireJuror(`/proofs/${proofId}`);
   const session = await getDemoSession();
   const portfolio = await getPortfolio(session.investorId);
-  const proof = getProofById(proofId);
+  const proof = await getProofById(proofId);
   if (!proof) notFound();
 
   const runBundle =
     proof.run?.id != null
-      ? getRunWithEvents(proof.run.id, juror.role)
+      ? await getRunWithEvents(proof.run.id, juror.role)
       : null;
 
   const projectSlug = proof.project?.slug;
@@ -40,7 +40,7 @@ export default async function ProofPage({
   let supporters = 12;
   try {
     const db = getDb();
-    const rows = db
+    const rows = await db
       .select()
       .from(allocations)
       .where(eq(allocations.projectId, proof.projectId))
