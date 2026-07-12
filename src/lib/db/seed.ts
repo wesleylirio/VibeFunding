@@ -1,4 +1,9 @@
 import { getDb, getSqlite } from "./index";
+import { count } from "drizzle-orm";
+
+function useRemoteDb() {
+  return Boolean(process.env.TURSO_DB_URL && process.env.TURSO_DB_TOKEN);
+}
 import {
   allocations,
   agentEvents,
@@ -61,19 +66,26 @@ export function clearAllTables() {
   sqlite.exec("PRAGMA foreign_keys = ON;");
 }
 
-export function seedDatabase(options?: { force?: boolean }) {
+export async function seedDatabase(options?: { force?: boolean }) {
   const db = getDb();
-  const sqlite = getSqlite();
 
-  if (!options?.force) {
-    const existing = sqlite.prepare("SELECT COUNT(*) as c FROM users").get() as {
-      c: number;
-    };
-    if (existing.c > 0) {
+  if (useRemoteDb()) {
+    const row = await (db as any).select({ c: count() }).from(users).get();
+    if (row && row.c > 0 && !options?.force) {
       return { seeded: false, reason: "already-seeded" as const };
     }
   } else {
-    clearAllTables();
+    const sqlite = getSqlite();
+    if (!options?.force) {
+      const existing = sqlite.prepare("SELECT COUNT(*) as c FROM users").get() as {
+        c: number;
+      };
+      if (existing.c > 0) {
+        return { seeded: false, reason: "already-seeded" as const };
+      }
+    } else {
+      clearAllTables();
+    }
   }
 
   const createdAt = daysAgo(200);
@@ -1226,7 +1238,7 @@ function buildCommunitySeed() {
   return { posts, comments };
 }
 
-export function resetDemo() {
+export async function resetDemo() {
   return seedDatabase({ force: true });
 }
 

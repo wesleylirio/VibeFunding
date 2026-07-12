@@ -17,6 +17,7 @@
     "probe:fireworks": "tsx scripts/fireworks/probe-fireworks.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.4",
     "better-sqlite3": "^12.11.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
