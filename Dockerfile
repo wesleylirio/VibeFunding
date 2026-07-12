@@ -11,7 +11,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DEMO_MODE=true
 ENV DATABASE_URL=file:/app/data/app.db
-RUN mkdir -p /app/data && npm run build
+RUN mkdir -p /app/data && npm run build && npm run seed -- --force
 
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app
@@ -36,8 +36,9 @@ COPY --from=build /app/src ./src
 COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY --from=build /app/next.config.ts ./next.config.ts
+COPY --from=build /app/data /app/data
 
-RUN mkdir -p /app/data /app/data/runs /app/data/proofs
+RUN mkdir -p /app/data/runs /app/data/proofs
 
 EXPOSE 3000
 
