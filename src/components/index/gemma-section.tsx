@@ -31,7 +31,7 @@ export function GemmaSection() {
               language.
             </p>
             <p className="mt-3 text-sm font-medium text-foreground">
-              She helps you understand the opportunity. She never invests for
+              It helps you understand the opportunity. It never invests for
               you.
             </p>
           </Reveal>

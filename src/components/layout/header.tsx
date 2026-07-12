@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, LogOut, User } from "lucide-react";
 import { WalletBar } from "@/components/wallet/wallet-bar";
-import { ThemeSelector } from "@/lib/brand/theme";
 import type { DemoRole } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -65,7 +64,6 @@ export function Header({
         </div>
 
         <div className="flex items-center gap-2">
-          <ThemeSelector className="hidden sm:inline-flex" />
           <WalletBar
             initialBalance={vibeBalance}
             userName={userName}

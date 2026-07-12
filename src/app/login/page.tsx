@@ -6,7 +6,6 @@ import Link from "next/link";
 import { VibeWordmark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ThemeSelector } from "@/lib/brand/theme";
 import { Badge } from "@/components/ui/badge";
 
 function LoginForm() {
@@ -60,7 +59,6 @@ function LoginForm() {
         <Link href="/">
           <VibeWordmark />
         </Link>
-        <ThemeSelector />
       </header>
 
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 pb-16">

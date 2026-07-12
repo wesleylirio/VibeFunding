@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { VibeWordmark } from "@/components/brand/logo";
-import { ThemeSelector } from "@/lib/brand/theme";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -50,7 +49,6 @@ export function IndexHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <ThemeSelector />
           <Link
             href="/login"
             className="rounded-[var(--vf-radius-sm)] border border-border px-3 py-2 text-sm font-medium vf-transition hover:bg-muted"

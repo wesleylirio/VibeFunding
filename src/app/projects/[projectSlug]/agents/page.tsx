@@ -61,7 +61,6 @@ export default async function ProjectAgentsPage({
           <AgentReplay
             run={bundle.run}
             events={bundle.events}
-            proofId={bundle.proof?.id}
             role={session.role}
             projectName={project.name}
             accentColor={project.accentColor}
