@@ -6,11 +6,9 @@ import type { LucideIcon } from "lucide-react";
 import { Activity, Briefcase, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DemoRole } from "@/lib/types";
-import { GemmaOrb } from "@/components/gemma/gemma-orb";
 
 type NavItem =
-  | { href: string; label: string; kind: "icon"; icon: LucideIcon }
-  | { href: string; label: string; kind: "gemma" };
+  { href: string; label: string; kind: "icon"; icon: LucideIcon };
 
 export function MobileNav({ role }: { role: DemoRole }) {
   const pathname = usePathname();
@@ -19,12 +17,11 @@ export function MobileNav({ role }: { role: DemoRole }) {
     { href: "/discover", label: "Discover", kind: "icon", icon: Compass },
     { href: "/portfolio", label: "Portfolio", kind: "icon", icon: Briefcase },
     { href: "/activity", label: "Activity", kind: "icon", icon: Activity },
-    { href: "/gemma", label: "Gemma", kind: "gemma" },
   ];
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-[color-mix(in_oklab,var(--surface-1)_94%,transparent)] backdrop-blur-xl lg:hidden">
-      <div className="grid grid-cols-4">
+      <div className="grid grid-cols-3">
         {items.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(item.href + "/");
@@ -37,11 +34,7 @@ export function MobileNav({ role }: { role: DemoRole }) {
                 active ? "text-primary" : "text-muted-foreground"
               )}
             >
-              {item.kind === "gemma" ? (
-                <GemmaOrb size={18} state="idle" pulse={false} />
-              ) : (
-                <item.icon className="h-4 w-4" />
-              )}
+              <item.icon className="h-4 w-4" />
               {item.label}
             </Link>
           );

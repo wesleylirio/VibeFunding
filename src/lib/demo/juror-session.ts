@@ -7,6 +7,9 @@ export type InvestorPreferences = {
   interests: string[];
   stage: string;
   risk: string;
+  horizon: string;
+  allocationSize: string;
+  liquidity: string;
   resources: string[];
   priorities: string[];
   completedAt: string;
@@ -46,13 +49,24 @@ function parsePreferences(
 ): InvestorPreferences | null {
   if (!raw || typeof raw !== "object") return null;
   const p = raw as Partial<InvestorPreferences>;
-  if (!Array.isArray(p.interests) || !p.stage || !p.risk || !p.completedAt) {
+  if (
+    !Array.isArray(p.interests) ||
+    !p.stage ||
+    !p.risk ||
+    !p.horizon ||
+    !p.allocationSize ||
+    !p.liquidity ||
+    !p.completedAt
+  ) {
     return null;
   }
   return {
     interests: p.interests.map(String).slice(0, 8),
     stage: String(p.stage).slice(0, 40),
     risk: String(p.risk).slice(0, 40),
+    horizon: String(p.horizon).slice(0, 40),
+    allocationSize: String(p.allocationSize).slice(0, 40),
+    liquidity: String(p.liquidity).slice(0, 40),
     resources: Array.isArray(p.resources)
       ? p.resources.map(String).slice(0, 8)
       : [],

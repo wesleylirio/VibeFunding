@@ -19,6 +19,9 @@ const prefsSchema = z.object({
   interests: z.array(z.string()).min(1).max(8),
   stage: z.string().min(1).max(40),
   risk: z.string().min(1).max(40),
+  horizon: z.string().min(1).max(40),
+  allocationSize: z.string().min(1).max(40),
+  liquidity: z.string().min(1).max(40),
   resources: z.array(z.string()).max(8),
   priorities: z.array(z.string()).max(8),
 });

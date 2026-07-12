@@ -22,6 +22,24 @@ export const RISK_OPTIONS = [
   { id: "Higher", label: "Higher" },
 ] as const;
 
+export const HORIZON_OPTIONS = [
+  { id: "Short term", label: "Under 12 months" },
+  { id: "Medium term", label: "1–3 years" },
+  { id: "Long term", label: "3+ years" },
+] as const;
+
+export const ALLOCATION_SIZE_OPTIONS = [
+  { id: "Cautious", label: "Small first position" },
+  { id: "Measured", label: "Measured position" },
+  { id: "Conviction", label: "High-conviction position" },
+] as const;
+
+export const LIQUIDITY_OPTIONS = [
+  { id: "Important", label: "I may need liquidity" },
+  { id: "Flexible", label: "I can remain flexible" },
+  { id: "Patient", label: "I can hold patiently" },
+] as const;
+
 /** Preference options about compute-backed outcomes (contributions use VIBE). */
 export const RESOURCE_PREF_OPTIONS = [
   { id: "AMD_GPU", label: "AMD GPU-backed agent work" },

@@ -112,7 +112,7 @@ export class MockGemmaGateway implements GemmaGateway {
       content = `Compared with your current holdings, projects outside your stake set diversify better (e.g. Security or AI Infrastructure if you are concentrated in Developer Tools).${skip} All figures are simulated.`;
     } else if (lower.includes("changed") || lower.includes("recent")) {
       content =
-        "Recent activity: new Proofs of Build and open Build Rounds are on Discover. Check Activity for stakeholder notes. I won't re-suggest projects you already funded.";
+        "Recent activity: new Proofs of Build and open Build Rounds are on Discover. Check Activity for stakeholder notes.";
     } else {
       content = `I'm Gemma, your portfolio copilot on VibeFunding.
 
@@ -120,7 +120,7 @@ Current context: **${input.context.replaceAll("_", " ")}**.
 
 I can help with discovery, due diligence, Build Round analysis, Proof of Build explanations, portfolio concentration, and founder communication drafts.
 
-I never auto-invest, and I won't re-suggest projects you already invested in.
+I never auto-invest. I help you compare fit, risk, and evidence.
 
 What would you like to examine?`;
     }
@@ -476,7 +476,7 @@ async function discoveryMatchesText(): Promise<string> {
     // In those contexts there is no Next.js cookie store.
   }
   if (!prefs) {
-    return "Complete the preference questions on Discover and I’ll match open Build Rounds. I never re-suggest projects you already invested in.";
+    return "Complete the preference questions on Discover and I’ll compare the available Build Rounds against your profile.";
   }
   const { items } = await listProjects({ sort: "TRENDING", limit: 24 });
   const matches = rankProjectMatches(items, prefs, {
@@ -486,7 +486,7 @@ async function discoveryMatchesText(): Promise<string> {
 
   if (matches.length === 0) {
     return held.size
-      ? `You’ve already invested in ${[...held].join(", ")}. I won’t re-suggest those. Browse other open rounds on Discover or open Portfolio for holdings.`
+      ? "Your current portfolio is established. I can compare the remaining opportunities by fit, evidence, and concentration impact."
       : "I don’t have a strong new match yet — try revising preferences on Discover.";
   }
 
@@ -496,10 +496,7 @@ async function discoveryMatchesText(): Promise<string> {
         `${i + 1}. **${m.name}** (/${m.slug}) — ${m.matchReason}`
     )
     .join("\n");
-  const heldNote = held.size
-    ? `\n\nSkipped (already invested): ${[...held].join(", ")}.`
-    : "";
-  return `Here are projects I’d look at next (not ones you already funded):\n\n${lines}${heldNote}\n\nInvest with VIBE (demo rate: 1,000 VIBE = 1 AMD GPU Hour). This is informational only.`;
+  return `Here are the strongest current matches:\n\n${lines}`;
 }
 
 async function explainBuildRound(input: GemmaChatInput) {

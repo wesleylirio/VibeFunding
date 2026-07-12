@@ -169,15 +169,26 @@ async function buildProactiveInsight(input: {
             }`;
           })
           .join("\n\n");
-        const heldNote =
-          investedSlugs.size > 0
-            ? `\n\nI’m not re-suggesting projects you already invested in.`
-            : "";
+        let recommendation = `${firstName}, based on your profile (**${prefs.interests.slice(0, 2).join(", ")}** · ${prefs.stage} · ${prefs.risk} risk):\n\n${lines}`;
+        let recommendationProvider: "AMD_GEMMA" | "CACHE" | "DEMO" = "DEMO";
+        try {
+          const live = await gateway.chat({
+            context: "GLOBAL_DISCOVERY",
+            role: "INVESTOR",
+            message: `Using this investor profile ${JSON.stringify(prefs)}, explain why these three candidates fit: ${JSON.stringify(matches.map((match) => ({ slug: match.slug, name: match.name, category: match.category, stage: match.stage, proofCount: match.proofCount, mainRisk: match.mainRisk })))}. Give a concise ranked recommendation with one fit reason and one watch-out per project. Do not mention excluded projects, do not tell the investor to invest, and do not include a call to action.`,
+          });
+          if (live.provider === "AMD_GEMMA" || live.provider === "CACHE") {
+            recommendation = live.content;
+            recommendationProvider = live.provider;
+          }
+        } catch {
+          // Keep the evidence-based fallback above.
+        }
         return {
           teaser: `I matched ${matches.length} new project${matches.length === 1 ? "" : "s"} for you — open chat.`,
           title: "Your matches",
-          content: `${firstName}, based on your profile (**${prefs.interests.slice(0, 2).join(", ")}** · ${prefs.stage} · ${prefs.risk} risk), here is where I would look next:\n\n${lines}\n\nOpen any project above to invest **VIBE** (demo rate: 1,000 VIBE = 1 AMD GPU Hour).${heldNote}`,
-          provider: "DEMO" as const,
+          content: recommendation,
+          provider: recommendationProvider,
           attribution: null,
           // Key changes when holdings change so we don't keep an old "seen" match list
           insightKey: `discover-match:${prefs.completedAt}:${[...investedSlugs].sort().join(",")}`,
@@ -188,7 +199,7 @@ async function buildProactiveInsight(input: {
         return {
           teaser: "You’re already in some rounds — ask me what’s next.",
           title: "Portfolio on Discover",
-          content: `${firstName}, you’ve already invested in project(s) on this platform. I won’t re-suggest those. Browse other Build Rounds on Discover, or open **Portfolio** to review holdings. Ask me about risk on any new name.`,
+          content: `${firstName}, your current portfolio is established. I can compare the remaining Build Rounds by fit, evidence quality, and concentration impact.`,
           provider: "DEMO" as const,
           attribution: null,
           insightKey: `discover-held:${[...investedSlugs].sort().join(",")}`,
@@ -198,7 +209,7 @@ async function buildProactiveInsight(input: {
     return {
       teaser: "I can match projects to what you care about.",
       title: "Discovery help",
-      content: `${firstName}, tell me what matters — stage, risk, or AMD GPU-backed shipping — and I’ll point you to Build Rounds that fit. You invest with VIBE (demo rate: 1,000 VIBE = 1 AMD GPU Hour).`,
+      content: `${firstName}, tell me what matters most: stage, risk tolerance, time horizon, liquidity, or evidence quality. I’ll use that to compare the available Build Rounds.`,
       provider: "DEMO" as const,
       attribution: null,
     };

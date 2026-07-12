@@ -10,6 +10,9 @@ import {
   RISK_OPTIONS,
   RESOURCE_PREF_OPTIONS,
   PRIORITY_OPTIONS,
+  HORIZON_OPTIONS,
+  ALLOCATION_SIZE_OPTIONS,
+  LIQUIDITY_OPTIONS,
 } from "@/lib/investor/preferences";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +20,9 @@ type Draft = {
   interests: string[];
   stage: string;
   risk: string;
+  horizon: string;
+  allocationSize: string;
+  liquidity: string;
   resources: string[];
   priorities: string[];
 };
@@ -25,6 +31,9 @@ const EMPTY: Draft = {
   interests: [],
   stage: "",
   risk: "",
+  horizon: "",
+  allocationSize: "",
+  liquidity: "",
   resources: [],
   priorities: [],
 };
@@ -67,19 +76,37 @@ export function PreferenceQuestionnaire({
     },
     {
       title: "What level of risk are you comfortable with?",
-      hint: "This shapes which builds Gemma highlights.",
+      hint: "Think about your ability to tolerate loss and uncertainty.",
       options: RISK_OPTIONS.map((o) => ({ id: o.id, label: o.label })),
       key: "risk",
     },
     {
-      title: "What kind of compute-backed progress do you care about?",
-      hint: "How you want GPU-backed work to show up.",
+      title: "How long can your capital remain committed?",
+      hint: "Early startup positions may take time to mature.",
+      options: HORIZON_OPTIONS.map((o) => ({ id: o.id, label: o.label })),
+      key: "horizon",
+    },
+    {
+      title: "How would you size a first investment?",
+      hint: "Position sizing matters as much as project selection.",
+      options: ALLOCATION_SIZE_OPTIONS.map((o) => ({ id: o.id, label: o.label })),
+      key: "allocationSize",
+    },
+    {
+      title: "How important is access to liquidity?",
+      hint: "Project rewards may not have an immediate market.",
+      options: LIQUIDITY_OPTIONS.map((o) => ({ id: o.id, label: o.label })),
+      key: "liquidity",
+    },
+    {
+      title: "What evidence would increase your conviction?",
+      hint: "Choose the execution signal you trust most.",
       options: RESOURCE_PREF_OPTIONS.map((o) => ({ id: o.id, label: o.label })),
       key: "resources",
     },
     {
       title: "What matters most to you?",
-      hint: "Last step — then Gemma shows matches.",
+      hint: "Last step — Gemma will evaluate the full profile.",
       options: PRIORITY_OPTIONS.map((o) => ({ id: o.id, label: o.label })),
       key: "priorities",
     },
@@ -87,14 +114,14 @@ export function PreferenceQuestionnaire({
 
   const current = steps[step];
   const selected =
-    current.key === "stage" || current.key === "risk"
+    current.key === "stage" || current.key === "risk" || current.key === "horizon" || current.key === "allocationSize" || current.key === "liquidity"
       ? draft[current.key]
         ? [draft[current.key]]
         : []
       : draft[current.key];
 
   function applyChoice(prev: Draft, key: StepKey, id: string): Draft {
-    if (key === "stage" || key === "risk") {
+    if (key === "stage" || key === "risk" || key === "horizon" || key === "allocationSize" || key === "liquidity") {
       return { ...prev, [key]: id };
     }
     return { ...prev, [key]: [id] };
@@ -111,6 +138,9 @@ export function PreferenceQuestionnaire({
               interests: nextDraft.interests,
               stage: nextDraft.stage,
               risk: nextDraft.risk,
+              horizon: nextDraft.horizon,
+              allocationSize: nextDraft.allocationSize,
+              liquidity: nextDraft.liquidity,
               resources: nextDraft.resources,
               priorities: nextDraft.priorities,
             },

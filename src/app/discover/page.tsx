@@ -16,6 +16,7 @@ import {
   listProjects,
 } from "@/lib/queries/projects";
 import { rankProjectMatches } from "@/lib/investor/preferences";
+import { getGemmaGateway } from "@/lib/gemma";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -78,10 +79,39 @@ export default async function DiscoverPage({
   const investedIds = await getInvestedProjectIds(session.investorId);
   const investedSlugs = await getInvestedProjectSlugs(session.investorId);
 
-  const gemmaMatches = rankProjectMatches(allItems, prefs, {
+  const rankedPool = rankProjectMatches(allItems, prefs, {
     excludeIds: investedIds,
     excludeSlugs: investedSlugs,
-  }).slice(0, 3);
+  });
+  const fallbackMatches = rankedPool.slice(0, 3);
+  let gemmaMatches = fallbackMatches;
+  try {
+    const candidates = rankedPool
+      .map((project) => ({
+        slug: project.slug,
+        name: project.name,
+        category: project.category,
+        stage: project.stage,
+        proofCount: project.proofCount,
+        round: project.activeRound?.title,
+        progress: project.activeRound?.progress,
+      }));
+    const response = await getGemmaGateway().chat({
+      context: "GLOBAL_DISCOVERY",
+      message: `Act as an investment diligence engine. Evaluate this investor profile: ${JSON.stringify(prefs)}. From these candidates: ${JSON.stringify(candidates)}, select exactly three best-fit projects. Return only their slugs in ranked order, separated by commas. Do not add advice or a call to action.`,
+      role: "INVESTOR",
+    });
+    const rankedSlugs = candidates
+      .map((candidate) => candidate.slug)
+      .filter((slug) => response.content.toLowerCase().includes(slug.toLowerCase()));
+    const aiMatches = rankedSlugs
+      .map((slug) => rankedPool.find((project) => project.slug === slug))
+      .filter((project): project is (typeof fallbackMatches)[number] => Boolean(project))
+      .slice(0, 3);
+    if (aiMatches.length === 3) gemmaMatches = aiMatches;
+  } catch {
+    // Deterministic ranking remains available if the live model is unavailable.
+  }
   const gemmaSlugs = new Set(gemmaMatches.map((m) => m.slug));
   // Suggestions first (unfunded only), then full list (incl. already invested)
   const orderedProjects = [

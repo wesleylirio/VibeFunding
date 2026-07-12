@@ -14,19 +14,16 @@ import {
 import { cn } from "@/lib/utils";
 import type { DemoRole } from "@/lib/types";
 import { VibeWordmark } from "@/components/brand/logo";
-import { GemmaOrb } from "@/components/gemma/gemma-orb";
 
 const COLLAPSE_KEY = "vf-sidebar-collapsed";
 
 type NavItem =
-  | { href: string; label: string; kind: "icon"; icon: LucideIcon }
-  | { href: string; label: string; kind: "gemma" };
+  { href: string; label: string; kind: "icon"; icon: LucideIcon };
 
 const investorNav: NavItem[] = [
   { href: "/discover", label: "Discover", kind: "icon", icon: Compass },
   { href: "/portfolio", label: "Portfolio", kind: "icon", icon: Briefcase },
   { href: "/activity", label: "Activity", kind: "icon", icon: Activity },
-  { href: "/gemma", label: "Gemma", kind: "gemma" },
 ];
 
 export function Sidebar({ role }: { role: DemoRole }) {
@@ -139,11 +136,7 @@ export function Sidebar({ role }: { role: DemoRole }) {
                   : "text-sidebar-foreground/55 hover:bg-white/5 hover:text-sidebar-foreground"
               )}
             >
-              {item.kind === "gemma" ? (
-                <GemmaOrb size={18} state="idle" pulse={false} />
-              ) : (
-                <item.icon className="h-4 w-4 shrink-0" />
-              )}
+              <item.icon className="h-4 w-4 shrink-0" />
               {!collapsed ? <span>{item.label}</span> : null}
             </Link>
           );

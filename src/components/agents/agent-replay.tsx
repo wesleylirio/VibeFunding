@@ -202,7 +202,7 @@ export function AgentReplay({
               return (
                 <li key={event.id} className="flex gap-3">
                   <div className="flex flex-col items-center">
-                    {event.type === "RUN_COMPLETED" ||
+                    {done || !isLast || event.type === "RUN_COMPLETED" ||
                     event.type === "TEST_COMPLETED" ? (
                       <CheckCircle2 className="h-4 w-4 text-success" />
                     ) : (

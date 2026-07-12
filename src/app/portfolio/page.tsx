@@ -70,9 +70,6 @@ export default async function PortfolioPage() {
               <Link href="/discover" className="inline-flex h-11 items-center rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground">
                 Discover opportunities
               </Link>
-              <Link href="/gemma" className="inline-flex h-11 items-center rounded-xl border border-gemma/30 bg-gemma/5 px-5 text-sm font-semibold text-gemma">
-                Ask Gemma for guidance
-              </Link>
             </div>
           </section>
 
