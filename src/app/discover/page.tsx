@@ -61,7 +61,7 @@ export default async function DiscoverPage({
     );
   }
 
-  const { items: allItems, total } = listProjects({
+  const { items: allItems, total } = await listProjects({
     search,
     category,
     stage,
@@ -71,8 +71,8 @@ export default async function DiscoverPage({
     verifiedOnly,
   });
 
-  const categories = getCategories();
-  const stages = getStages();
+  const categories = await getCategories();
+  const stages = await getStages();
 
   // Never re-suggest projects the investor already funded
   const investedIds = await getInvestedProjectIds(session.investorId);

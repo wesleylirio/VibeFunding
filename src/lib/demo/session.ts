@@ -9,9 +9,9 @@ export type DemoRole = "INVESTOR" | "FOUNDER";
 export async function getDemoSession() {
   await ensureSeeded();
   const db = getDb();
-  let state = db.select().from(demoState).where(eq(demoState.id, "default")).get();
+  let state = await db.select().from(demoState).where(eq(demoState.id, "default")).get();
   if (!state) {
-    db.insert(demoState)
+    await db.insert(demoState)
       .values({
         id: "default",
         activeRole: "INVESTOR",
@@ -19,12 +19,12 @@ export async function getDemoSession() {
         updatedAt: nowIso(),
       })
       .run();
-    state = db.select().from(demoState).where(eq(demoState.id, "default")).get()!;
+    state = (await db.select().from(demoState).where(eq(demoState.id, "default")).get())!;
   }
 
   const activeUserId =
     state.activeRole === "FOUNDER" ? FOUNDER_ID : INVESTOR_ID;
-  const user = db.select().from(users).where(eq(users.id, activeUserId)).get();
+  const user = await db.select().from(users).where(eq(users.id, activeUserId)).get();
 
   return {
     role: state.activeRole as DemoRole,
@@ -39,7 +39,7 @@ export async function switchDemoRole(role: DemoRole) {
   await ensureSeeded();
   const db = getDb();
   const activeUserId = role === "FOUNDER" ? FOUNDER_ID : INVESTOR_ID;
-  db.update(demoState)
+  await db.update(demoState)
     .set({
       activeRole: role,
       activeUserId,

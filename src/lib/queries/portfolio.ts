@@ -51,38 +51,38 @@ export async function getInvestedProjectSlugs(investorId = INVESTOR_ID): Promise
 export async function getPortfolio(investorId = INVESTOR_ID) {
   await ensureSeeded();
   const db = getDb();
-  const investor = db.select().from(users).where(eq(users.id, investorId)).get();
+  const investor = await db.select().from(users).where(eq(users.id, investorId)).get();
 
-  const holdingRows = db
+  const holdingBase = await db
     .select()
     .from(holdings)
     .where(eq(holdings.investorId, investorId))
-    .all()
-    .map((h) => {
+    .all();
+  const holdingRows = await Promise.all(holdingBase.map(async (h) => {
       const project = h.projectId
-        ? db.select().from(projects).where(eq(projects.id, h.projectId)).get()
+        ? await db.select().from(projects).where(eq(projects.id, h.projectId)).get()
         : null;
       return {
         ...h,
         metadata: JSON.parse(h.metadata || "{}") as Record<string, unknown>,
         project,
       };
-    });
+    }));
 
-  const allocationRows = db
+  const allocationBase = await db
     .select()
     .from(allocations)
     .where(eq(allocations.investorId, investorId))
     .orderBy(desc(allocations.createdAt))
-    .all()
-    .map((a) => {
-      const project = db
+    .all();
+  const allocationRows = await Promise.all(allocationBase.map(async (a) => {
+      const project = await db
         .select()
         .from(projects)
         .where(eq(projects.id, a.projectId))
         .get();
       return { ...a, project };
-    });
+    }));
 
   const investedProjectIds = [
     ...new Set(
@@ -93,15 +93,15 @@ export async function getPortfolio(investorId = INVESTOR_ID) {
   ];
 
   const recentProofs = investedProjectIds.length
-    ? db
+    ? (await db
         .select()
         .from(proofsOfBuild)
         .orderBy(desc(proofsOfBuild.createdAt))
-        .all()
+        .all())
         .filter((p) => investedProjectIds.includes(p.projectId))
         .slice(0, 5)
-        .map((p) => {
-          const project = db
+        .map(async (p) => {
+          const project = await db
             .select()
             .from(projects)
             .where(eq(projects.id, p.projectId))
@@ -111,15 +111,15 @@ export async function getPortfolio(investorId = INVESTOR_ID) {
     : [];
 
   const recentRuns = investedProjectIds.length
-    ? db
+    ? (await db
         .select()
         .from(agentRuns)
         .orderBy(desc(agentRuns.createdAt))
-        .all()
+        .all())
         .filter((r) => investedProjectIds.includes(r.projectId))
         .slice(0, 5)
-        .map((r) => {
-          const project = db
+        .map(async (r) => {
+          const project = await db
             .select()
             .from(projects)
             .where(eq(projects.id, r.projectId))
@@ -129,16 +129,16 @@ export async function getPortfolio(investorId = INVESTOR_ID) {
     : [];
 
   const updates = investedProjectIds.length
-    ? db
+    ? (await db
         .select()
         .from(stakeholderUpdates)
         .where(eq(stakeholderUpdates.status, "PUBLISHED"))
         .orderBy(desc(stakeholderUpdates.publishedAt))
-        .all()
+        .all())
         .filter((u) => investedProjectIds.includes(u.projectId))
         .slice(0, 8)
-        .map((u) => {
-          const project = db
+        .map(async (u) => {
+          const project = await db
             .select()
             .from(projects)
             .where(eq(projects.id, u.projectId))
@@ -168,9 +168,9 @@ export async function getPortfolio(investorId = INVESTOR_ID) {
     tokenHoldings,
     nftHoldings,
     allocations: allocationRows,
-    recentProofs,
-    recentRuns,
-    updates,
+    recentProofs: await Promise.all(recentProofs),
+    recentRuns: await Promise.all(recentRuns),
+    updates: await Promise.all(updates),
     byCategory,
     investedProjectCount: investedProjectIds.length,
   };

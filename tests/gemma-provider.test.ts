@@ -145,8 +145,8 @@ describe("context filtering boundaries", () => {
     seedDatabase({ force: true });
   });
 
-  it("portfolio context excludes private agent payloads", () => {
-    const ctx = buildPortfolioContext({ displayName: "Wesley" });
+  it("portfolio context excludes private agent payloads", async () => {
+    const ctx = await buildPortfolioContext({ displayName: "Wesley" });
     const raw = JSON.stringify(ctx);
     expect(raw).not.toMatch(/privatePayload/i);
     expect(raw).not.toMatch(/password/i);
@@ -155,16 +155,16 @@ describe("context filtering boundaries", () => {
     expect(ctx.holdings).toBeDefined();
   });
 
-  it("project context is public diligence data only", () => {
-    const ctx = buildProjectContext({ projectSlug: "collabmesh" });
+  it("project context is public diligence data only", async () => {
+    const ctx = await buildProjectContext({ projectSlug: "collabmesh" });
     expect(ctx?.name).toBe("CollabMesh");
     const raw = JSON.stringify(ctx);
     expect(raw).not.toMatch(/FOUNDER_ONLY/);
     expect(raw).not.toMatch(/private_payload/);
   });
 
-  it("proof context includes hashes not secrets", () => {
-    const ctx = buildProofContext("proof-collabmesh-1");
+  it("proof context includes hashes not secrets", async () => {
+    const ctx = await buildProofContext("proof-collabmesh-1");
     expect(ctx?.taskTitle).toBeTruthy();
     expect(ctx?.manifestHash).toBeTruthy();
     const raw = JSON.stringify(ctx);

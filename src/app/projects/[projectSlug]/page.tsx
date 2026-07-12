@@ -33,7 +33,7 @@ export default async function ProjectPage({
   const { projectSlug } = await params;
   const juror = await requireJuror(`/projects/${projectSlug}`);
   const session = await getDemoSession();
-  const project = getProjectBySlug(projectSlug);
+  const project = await getProjectBySlug(projectSlug);
   if (!project) notFound();
 
   const portfolio = await getPortfolio(session.investorId);

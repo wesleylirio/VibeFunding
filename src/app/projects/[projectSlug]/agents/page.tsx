@@ -21,7 +21,7 @@ export default async function ProjectAgentsPage({
   const juror = await requireJuror(`/projects/${projectSlug}/agents`);
   const session = await getDemoSession();
   const portfolio = await getPortfolio(session.investorId);
-  const project = getProjectBySlug(projectSlug);
+  const project = await getProjectBySlug(projectSlug);
   if (!project) notFound();
 
   const bundle = getRunByProjectSlug(projectSlug, juror.role);

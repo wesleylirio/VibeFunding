@@ -21,7 +21,7 @@ export default async function CommunityPage({
   const juror = await requireJuror(`/projects/${projectSlug}/community`);
   const session = await getDemoSession();
   const portfolio = await getPortfolio(session.investorId);
-  const project = getProjectBySlug(projectSlug);
+  const project = await getProjectBySlug(projectSlug);
   if (!project) notFound();
 
   const hasInvested =

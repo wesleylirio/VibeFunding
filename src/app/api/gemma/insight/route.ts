@@ -141,7 +141,7 @@ async function buildProactiveInsight(input: {
     const investedSlugs = await getInvestedProjectSlugs(session.investorId);
 
     if (prefs) {
-      const { items } = listProjects({ sort: "TRENDING", limit: 24 });
+      const { items } = await listProjects({ sort: "TRENDING", limit: 24 });
       const matches = rankProjectMatches(items, prefs, {
         excludeIds: investedIds,
         excludeSlugs: investedSlugs,

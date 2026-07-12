@@ -78,7 +78,7 @@ export async function buildProjectContext(input: {
   const db = getDb();
   let project =
     input.projectSlug != null
-      ? getProjectBySlug(input.projectSlug)
+      ? await getProjectBySlug(input.projectSlug)
       : null;
   if (!project && input.projectId) {
     const row = db
@@ -86,7 +86,7 @@ export async function buildProjectContext(input: {
       .from(projects)
       .where(eq(projects.id, input.projectId))
       .get();
-    if (row) project = getProjectBySlug(row.slug);
+    if (row) project = await getProjectBySlug(row.slug);
   }
   if (!project) return null;
 

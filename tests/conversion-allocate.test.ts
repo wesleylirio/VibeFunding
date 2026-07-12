@@ -81,8 +81,8 @@ describe("allocation settlement", () => {
     }
   });
 
-  it("settles VIBE immediately with tokens and AMD GPU hours", () => {
-    const before = getPortfolio(INVESTOR_ID);
+  it("settles VIBE immediately with tokens and AMD GPU hours", async () => {
+    const before = await getPortfolio(INVESTOR_ID);
     const result = allocateToRound({
       investorId: INVESTOR_ID,
       buildRoundId: "round-collabmesh-presence",
@@ -93,7 +93,7 @@ describe("allocation settlement", () => {
     expect(result.tokensReleased).toBe(400); // 500 BU * 0.8
     expect(result.requiresVerification).toBe(false);
     expect(result.amdGpuHours).toBe(10); // 500 / 50
-    const after = getPortfolio(INVESTOR_ID);
+    const after = await getPortfolio(INVESTOR_ID);
     expect(after.vibeBalance).toBe(before.vibeBalance - 500);
   });
 
@@ -130,8 +130,8 @@ describe("allocation settlement", () => {
     ).toThrow(/positive/);
   });
 
-  it("grants NFT at liquid threshold", () => {
-    resetDemo();
+  it("grants NFT at liquid threshold", async () => {
+    await resetDemo();
     const result = allocateToRound({
       investorId: INVESTOR_ID,
       buildRoundId: "round-collabmesh-presence",
@@ -140,13 +140,13 @@ describe("allocation settlement", () => {
     });
     expect(result.nft?.released).toBe(true);
     expect(result.nft?.name).toBeTruthy();
-    const portfolio = getPortfolio(INVESTOR_ID);
+    const portfolio = await getPortfolio(INVESTOR_ID);
     expect(portfolio.nftHoldings.length).toBeGreaterThan(0);
   });
 
-  it("reset restores balances", () => {
-    resetDemo();
-    const portfolio = getPortfolio(INVESTOR_ID);
+  it("reset restores balances", async () => {
+    await resetDemo();
+    const portfolio = await getPortfolio(INVESTOR_ID);
     expect(portfolio.vibeBalance).toBe(50000);
   });
 });

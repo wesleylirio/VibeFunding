@@ -48,15 +48,15 @@ describe("seed and allocate", () => {
     }
   });
 
-  it("seeds investor and projects", () => {
-    const portfolio = getPortfolio(INVESTOR_ID);
+  it("seeds investor and projects", async () => {
+    const portfolio = await getPortfolio(INVESTOR_ID);
     expect(portfolio.investor?.name).toBeTruthy();
     expect(portfolio.vibeBalance).toBeGreaterThan(0);
     expect(portfolio.tokenHoldings.length).toBeGreaterThan(0);
   });
 
-  it("persists allocation and holdings", () => {
-    const before = getPortfolio(INVESTOR_ID);
+  it("persists allocation and holdings", async () => {
+    const before = await getPortfolio(INVESTOR_ID);
     const result = allocateToRound({
       investorId: INVESTOR_ID,
       buildRoundId: "round-collabmesh-presence",
@@ -66,7 +66,7 @@ describe("seed and allocate", () => {
     expect(result.rewardTokens).toBeGreaterThan(0);
     expect(result.settlementStatus).toBe("IMMEDIATE");
 
-    const after = getPortfolio(INVESTOR_ID);
+    const after = await getPortfolio(INVESTOR_ID);
     expect(after.vibeBalance).toBe(before.vibeBalance - 500);
     expect(after.allocations.length).toBeGreaterThan(before.allocations.length);
   });
@@ -81,14 +81,14 @@ describe("seed and allocate", () => {
 
     expect(result.proofId).toMatch(/^proof-/);
     const proof = getProofById(result.proofId);
-    expect(proof?.project.slug).toBe("auditforge");
+    expect(proof?.project?.slug).toBe("auditforge");
     expect(proof?.run?.status).toBe("COMPLETED");
     expect(proof?.artifacts.length).toBeGreaterThan(0);
   });
 
-  it("reset restores demo state", () => {
-    resetDemo();
-    const portfolio = getPortfolio(INVESTOR_ID);
+  it("reset restores demo state", async () => {
+    await resetDemo();
+    const portfolio = await getPortfolio(INVESTOR_ID);
     expect(portfolio.vibeBalance).toBe(50000);
   });
 });

@@ -23,8 +23,8 @@ export type ProjectQuery = {
   limit?: number;
 };
 
-export function listProjects(query: ProjectQuery = {}) {
-  ensureSeeded();
+export async function listProjects(query: ProjectQuery = {}) {
+  await ensureSeeded();
   const db = getDb();
   const page = Math.max(1, query.page ?? 1);
   const limit = Math.min(24, Math.max(1, query.limit ?? 12));
@@ -52,7 +52,7 @@ export function listProjects(query: ProjectQuery = {}) {
   if (query.sort === "TRENDING") orderBy = desc(projects.trendingScore);
   if (query.sort === "PROGRESS") orderBy = desc(projects.trendingScore);
 
-  const rows = db
+  const rows = await db
     .select()
     .from(projects)
     .where(where)
@@ -61,14 +61,14 @@ export function listProjects(query: ProjectQuery = {}) {
     .offset(offset)
     .all();
 
-  const totalRow = db
+  const totalRow = await db
     .select({ count: sql<number>`count(*)` })
     .from(projects)
     .where(where)
     .get();
 
-  const items = rows.map((project) => {
-    const activeRound = db
+  const items = await Promise.all(rows.map(async (project) => {
+    const activeRound = await db
       .select()
       .from(buildRounds)
       .where(
@@ -84,14 +84,14 @@ export function listProjects(query: ProjectQuery = {}) {
       .orderBy(desc(buildRounds.createdAt))
       .get();
 
-    const proofCount = db
+    const proofCount = await db
       .select({ count: sql<number>`count(*)` })
       .from(proofsOfBuild)
       .where(eq(proofsOfBuild.projectId, project.id))
       .get();
 
     const returns = activeRound
-      ? db
+      ? await db
           .select()
           .from(returnMechanisms)
           .where(eq(returnMechanisms.buildRoundId, activeRound.id))
@@ -124,7 +124,7 @@ export function listProjects(query: ProjectQuery = {}) {
       returnTypes: returns.map((r) => r.type),
       returnTitles: returns.map((r) => r.title),
     };
-  });
+  }));
 
   let filtered = items;
   if (query.verifiedOnly) {
@@ -140,35 +140,35 @@ export function listProjects(query: ProjectQuery = {}) {
   };
 }
 
-export function getProjectBySlug(slug: string) {
-  ensureSeeded();
+export async function getProjectBySlug(slug: string) {
+  await ensureSeeded();
   const db = getDb();
-  const project = db
+  const project = await db
     .select()
     .from(projects)
     .where(eq(projects.slug, slug))
     .get();
   if (!project) return null;
 
-  const founder = db
+  const founder = await db
     .select()
     .from(users)
     .where(eq(users.id, project.founderId))
     .get();
 
-  const rounds = db
+  const roundRows = await db
     .select()
     .from(buildRounds)
     .where(eq(buildRounds.projectId, project.id))
     .orderBy(desc(buildRounds.createdAt))
-    .all()
-    .map((round) => {
-      const resources = db
+    .all();
+  const rounds = await Promise.all(roundRows.map(async (round) => {
+      const resources = await db
         .select()
         .from(resourceRequirements)
         .where(eq(resourceRequirements.buildRoundId, round.id))
         .all();
-      const returns = db
+      const returns = await db
         .select()
         .from(returnMechanisms)
         .where(eq(returnMechanisms.buildRoundId, round.id))
@@ -187,33 +187,33 @@ export function getProjectBySlug(slug: string) {
               )
             : 0,
       };
-    });
+    }));
 
-  const projectNfts = db
+  const nftRows = await db
     .select()
     .from(nfts)
     .where(eq(nfts.projectId, project.id))
-    .all()
-    .map((n) => ({
+    .all();
+  const projectNfts = nftRows.map((n) => ({
       ...n,
       utility: JSON.parse(n.utility) as string[],
     }));
 
-  const proofs = db
+  const proofs = await db
     .select()
     .from(proofsOfBuild)
     .where(eq(proofsOfBuild.projectId, project.id))
     .orderBy(desc(proofsOfBuild.createdAt))
     .all();
 
-  const runs = db
+  const runs = await db
     .select()
     .from(agentRuns)
     .where(eq(agentRuns.projectId, project.id))
     .orderBy(desc(agentRuns.createdAt))
     .all();
 
-  const updates = db
+  const updates = await db
     .select()
     .from(stakeholderUpdates)
     .where(
@@ -248,24 +248,24 @@ export function getProjectBySlug(slug: string) {
   };
 }
 
-export function getCategories() {
-  ensureSeeded();
+export async function getCategories() {
+  await ensureSeeded();
   const db = getDb();
-  return db
+  return (await db
     .selectDistinct({ category: projects.category })
     .from(projects)
     .orderBy(asc(projects.category))
-    .all()
+    .all())
     .map((r) => r.category);
 }
 
-export function getStages() {
-  ensureSeeded();
+export async function getStages() {
+  await ensureSeeded();
   const db = getDb();
-  return db
+  return (await db
     .selectDistinct({ stage: projects.stage })
     .from(projects)
     .orderBy(asc(projects.stage))
-    .all()
+    .all())
     .map((r) => r.stage);
 }

@@ -472,7 +472,7 @@ async function discoveryMatchesText(): Promise<string> {
   if (!prefs) {
     return "Complete the preference questions on Discover and I’ll match open Build Rounds. I never re-suggest projects you already invested in.";
   }
-  const { items } = listProjects({ sort: "TRENDING", limit: 24 });
+  const { items } = await listProjects({ sort: "TRENDING", limit: 24 });
   const matches = rankProjectMatches(items, prefs, {
     excludeSlugs: held,
     excludeIds: await getInvestedProjectIds(),
